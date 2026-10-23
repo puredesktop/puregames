@@ -1,9 +1,23 @@
 # PureGames
 
-Private standalone PureDesktop app. Original app code, game rules text and game visuals. Uses React, the existing platform bridge/UI and Vite; no additional game or networking libraries.
+Standalone private PureDesktop app. Ribbon Run is an original 2–4-seat trail arena. Play locally with a Game Player or a second person on the keyboard, or connect PureDesktop to PureServer to mix teammates and Game Players in the same live match. Grow a Garden has been retired.
 
-Current preview: Seed Circuit (cooperative garden with a local rules-based Game Player) and Ribbon Run (real-time trail arena against Game Player or another person on the same keyboard). PureServer rooms, mixed remote seats, persistent matches, and the full agent integration remain in development. The current Game Player is an offline strategy implementation, not a configured language-model agent.
+## Play
 
-Develop inside a ps-suite checkout at `apps/puregames` so `../../packages/bridge` and `../../packages/ui` resolve. Run `npm install`, `npm test`, `npm run dev`, and `npm run build`. `python3 scripts/package.py` produces a compiled-only runtime package. That package requires the prebuilt-app installer shell PR; older desktops only understand Factory project packages.
+Play is beneath the arena. When connected to PureServer it offers **Play against Game Player**, **Invite teammates**, or entry of an existing invitation code. Teammates on the same PureServer organisation enter the code and automatically take a seat. The coordinator adds optional Game Players and starts the round. A code identifies the room; server membership and workspace permissions determine access. These organisation-workspace rooms are not private to a subgroup.
 
-Domain logic lives in src/lib and has Node built-in tests. AppFrame owns platform identity. Shared theme/control alignment and broader UI validation remain outstanding in this early preview. No external game code, branded game assets, word lists or boards were copied. Existing platform dependencies retain their own licenses.
+Arrow keys steer your marker; Space pauses/resumes (the coordinator resumes a shared round). WASD controls only the second local human. Full screen is in the toolbar; **Games** returns to the selector. Arena controls remain beside the game. Game Players use a local flood-fill strategy, not a remote language model or an assistant roster entry.
+
+## Architecture
+
+Game rules and rendering live here. `src/lib/shared.mjs` uses the platform's existing Yjs protocol. An elected peer coordinates the simulation at 10 ticks/second, accepts input and runs bots, and checkpoints JSON. All clients render the same state. Loss of a human connection or coordinator pauses play; transient connections retry. These are trusted collaborative games, not an adversarial competitive service with server-side anti-cheat.
+
+Native sessions use `collab.remote` through the shell's authenticated main-process transport. PureServer credentials never enter the app. Browser sessions use the existing authenticated WebSocket. Older desktops without this transport retain local play. The shell work is in ps-suite PR #984. No new platform dependencies were introduced: React, Yjs, y-protocols and lib0 are already used by PureDesktop.
+
+## Development and verification
+
+Place this repo at `apps/puregames` within a ps-suite checkout so the platform SDK file dependencies resolve. Run `npm test`, `npm run build`, or `npm run dev`. `python3 scripts/package.py` builds the installable compiled package (requires the shell's prebuilt-app installer).
+
+`node scripts/check-shared.mjs /path/to/pure-server [/path/to/ps-suite/packages/shell/src/modules/collab/remote.ts]` tests two authenticated clients, automatic seats, a mixed human/bot match, steering, shared pause and coordinator migration against a temporary server database/workspace. With the optional shell module it runs one client through the native transport adapter and checks ticket ownership and path rejection. The combined test process can warn about two Yjs installations; production bundles have one.
+
+App code and visual assets are original. Existing platform dependencies retain their own licences. No branded game names, artwork or external game code are bundled.

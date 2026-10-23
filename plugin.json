@@ -1,14 +1,16 @@
 {
   "id": "games",
   "name": "PureGames",
-  "permissions": [],
+  "permissions": [
+    "filesystem"
+  ],
   "entrypoint": {
     "kind": "built-static",
     "dir": "dist"
   },
   "app": {
     "id": "games",
-    "slug": "games",
+    "slug": "puregames",
     "name": "PureGames",
     "navigationLabel": "Games",
     "productName": "puregames",

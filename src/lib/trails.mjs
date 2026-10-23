@@ -5,14 +5,29 @@ export const vectors = [
   [0, 1],
   [-1, 0],
 ];
-export function newRace() {
+export function newRace(count = 2, arena = "open") {
+  if (!Number.isInteger(count) || count < 2 || count > 4)
+    throw Error("Choose two to four players.");
   const players = [
     { x: 5, y: 18, d: 1, alive: true },
     { x: 30, y: 18, d: 3, alive: true },
-  ];
+    { x: 18, y: 5, d: 2, alive: true },
+    { x: 18, y: 30, d: 0, alive: true },
+  ].slice(0, count);
   return {
     players,
     trail: players.map((p, i) => ({ x: p.x, y: p.y, owner: i })),
+    obstacles:
+      arena === "islands"
+        ? [10, 24].flatMap((x) =>
+            [10, 24].flatMap((y) =>
+              Array.from({ length: 9 }, (_, i) => ({
+                x: x + (i % 3),
+                y: y + Math.floor(i / 3),
+              }))
+            )
+          )
+        : [],
     tick: 0,
     done: false,
   };
@@ -20,7 +35,9 @@ export function newRace() {
 const key = (x, y) => `${x},${y}`;
 export function step(s, inputs = {}) {
   if (s.done) return s;
-  const occupied = new Set(s.trail.map((p) => key(p.x, p.y)));
+  const occupied = new Set(
+    [...s.trail, ...(s.obstacles || [])].map((p) => key(p.x, p.y))
+  );
   const next = s.players.map((p, i) => {
     if (!p.alive) return { ...p };
     const requested = inputs[i];
@@ -46,6 +63,7 @@ export function step(s, inputs = {}) {
       );
   });
   return {
+    ...s,
     players: next,
     trail: [
       ...s.trail,
@@ -59,7 +77,9 @@ export function step(s, inputs = {}) {
 }
 export function steer(s, id) {
   const p = s.players[id];
-  const occupied = new Set(s.trail.map((p) => key(p.x, p.y)));
+  const occupied = new Set(
+    [...s.trail, ...(s.obstacles || [])].map((p) => key(p.x, p.y))
+  );
   const score = (d) => {
     const x = p.x + vectors[d][0],
       y = p.y + vectors[d][1];
