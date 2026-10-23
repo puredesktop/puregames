@@ -1,4 +1,18 @@
 export const GAMES = {
+  noir: {
+    name: "The Ninth Bell",
+    subtitle: "Live noir pursuit",
+    genre: "Real-time · Stealth · Mystery",
+    tagline: "Keep moving. Keep to the shadows.",
+    description:
+      "Walk the rain-soaked streets with your team. Recover coded fragments, identify a moving courier, and get the evidence out while the watch closes in.",
+    arenas: { open: "Before dawn", islands: "After hours" },
+    goal: "A live city · A different trail every round",
+    rules: [
+      "Arrows or WASD to walk. Shift to run. Get close to a marked drop and press E, then stay still while searching. Recover the coat, mark and countersign; press C to read your evidence. V switches Follow, Bird’s-eye and Through your eyes. In first person, Left/Right turn, Up/Down walk and A/D sidestep.",
+      "Identify the moving courier from both appearance clues. Approach and press E. Then every human investigator must return to the amber telephone in the south. Avoid searchlight cones: three interceptions end the operation. Before dawn has eight minutes; After hours has no deadline.",
+    ],
+  },
   words: {
     name: "Word Loom",
     subtitle: "Cooperative word puzzle",

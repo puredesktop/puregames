@@ -1,3 +1,6 @@
+import "./noir.css";
+import { NoirArena } from "./NoirArena.jsx";
+import { newNoir } from "./lib/noir.mjs";
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { AppFrame } from "@purescience/platform-bridge/components/AppFrame";
@@ -18,7 +21,7 @@ import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
   command(
-    createRoom("Local table", me, "words"),
+    createRoom("Local table", me, "noir"),
     "local",
     { type: "bot" },
     "local",
@@ -49,7 +52,9 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
-  const orbit = s.game === "orbit",
+  const noir = s.game === "noir",
+    coop = ["noir", "words"].includes(s.game),
+    orbit = s.game === "orbit",
     shoot = s.game === "shoot",
     words = s.game === "words",
     game = GAMES[s.game],
@@ -256,7 +261,9 @@ function App() {
     s.seats.length >= 2 && s.seats.every((p) => p.bot || peers.has(p.id));
   return (
     <div
-      className={`game-viewport software ${fullscreen ? "is-fullscreen" : ""}`}
+      className={`game-viewport software ${noir ? "noir-mode" : ""} ${
+        fullscreen ? "is-fullscreen" : ""
+      }`}
       ref={surface}
     >
       <div className="game-toolbar">
@@ -345,8 +352,32 @@ function App() {
       ) : (
         <>
           <div className="match">
-            <div className={`play-surface ${words ? "word-surface" : ""}`}>
-              {words ? (
+            <div
+              className={`play-surface ${
+                noir ? "noir-surface" : words ? "word-surface" : ""
+              }`}
+            >
+              {noir ? (
+                <NoirArena
+                  board={
+                    s.board?.kind === "noir"
+                      ? s.board
+                      : newNoir(
+                          Math.max(2, s.seats.length),
+                          s.arena,
+                          s.round + 1,
+                          42
+                        )
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  lobby={s.phase === "lobby"}
+                  id={id}
+                  remote={!!remote}
+                  onAction={action}
+                  onSteer={steer}
+                />
+              ) : words ? (
                 <WordArena
                   board={
                     s.board?.kind === "words"
@@ -450,7 +481,12 @@ function App() {
                 )}
               </div>
               <div className="control-strip">
-                {words ? (
+                {noir ? (
+                  <span>
+                    <kbd>↑ ← ↓ →</kbd> Walk <kbd>Shift</kbd> Run <kbd>E</kbd>{" "}
+                    Interact
+                  </span>
+                ) : words ? (
                   <span>
                     <kbd>A–Z</kbd> Type or tap letters
                   </span>
@@ -479,9 +515,11 @@ function App() {
                     <kbd>Enter</kbd> Add word
                   </span>
                 ) : (
-                  <span>
-                    <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
-                  </span>
+                  !noir && (
+                    <span>
+                      <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
+                    </span>
+                  )
                 )}
                 <span>
                   <kbd>Esc</kbd> Exit full screen
@@ -491,7 +529,7 @@ function App() {
             <aside className="players-panel">
               <div className="section-heading">
                 <span className="section-label">
-                  {words ? "Team contributions" : "Live scores"}
+                  {coop ? "Team contributions" : "Live scores"}
                 </span>
                 <span>{s.seats.length} / 4</span>
               </div>
@@ -515,7 +553,7 @@ function App() {
                           : peers.has(p.id)
                           ? "Ready"
                           : "Disconnected"}{" "}
-                        · {s.scores?.[p.id] || 0} {words ? "completed" : "wins"}
+                        · {s.scores?.[p.id] || 0} {coop ? "completed" : "wins"}
                       </small>
                       {shoot && s.board?.kind === "shoot" && (
                         <small>
@@ -587,7 +625,7 @@ function App() {
                   </div>
                   <div className="setting-section">
                     <span className="section-label">
-                      {words ? "Mode" : "Arena"}
+                      {coop ? "Mode" : "Arena"}
                     </span>
                     <div className="choice-row">
                       {["open", "islands"].map((arena) => (
@@ -607,6 +645,8 @@ function App() {
                       ? hostControls
                         ? "Start when everyone has a seat."
                         : "The coordinator starts the round."
+                      : noir
+                      ? "Move with arrows or WASD. Shift runs. E searches or speaks. Player 2 uses WASD and F."
                       : words
                       ? "Type or tap the rack. All players work toward the same score."
                       : s.seats.filter((p) => !p.bot).length > 1
@@ -715,7 +755,7 @@ function App() {
               Game Player or invite people from your team.
             </p>
             <button className="primary" onClick={robot}>
-              {words ? "Play with Game Player" : "Play against Game Player"}
+              {coop ? "Play with Game Player" : "Play against Game Player"}
             </button>
             <button className="secondary" disabled={busy} onClick={inviteTeam}>
               {busy ? "Creating invitation…" : "Invite teammates"}

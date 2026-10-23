@@ -1,3 +1,4 @@
+import { NoirPreview } from "./NoirScene.jsx";
 import React from "react";
 import { WordPreview } from "./WordArena.jsx";
 import { GAMES } from "./lib/games.mjs";
@@ -148,18 +149,23 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const orbit = room.game === "orbit",
+  const noir = room.game === "noir",
+    coop = ["words", "noir"].includes(room.game),
+    orbit = room.game === "orbit",
     shoot = room.game === "shoot",
     words = room.game === "words",
     info = GAMES[room.game];
   const islands = room.arena === "islands";
   return (
-    <section className="games-library" aria-label="Game library">
+    <section
+      className={`games-library ${noir ? "noir-library" : ""}`}
+      aria-label="Game library"
+    >
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library <span>04</span>
+          Library <span>05</span>
         </div>
-        {["words", "shoot", "orbit", "ribbon"].map((game) => (
+        {["noir", "words", "shoot", "orbit", "ribbon"].map((game) => (
           <button
             key={game}
             className={`library-game ${room.game === game ? "selected" : ""}`}
@@ -168,7 +174,20 @@ export function Library({
             onClick={() => onSelect(game)}
           >
             <span className={`library-game-icon ${game}`}>
-              {game === "words" ? (
+              {game === "noir" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="m7 8 3 3m23-3-3 3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "words" ? (
                 <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <rect
                     x="5"
@@ -221,7 +240,7 @@ export function Library({
             <span>
               <strong>
                 {GAMES[game].name}
-                {game === "words" && <em className="library-new">NEW</em>}
+                {game === "noir" && <em className="library-new">NEW</em>}
               </strong>
               <small>{GAMES[game].subtitle}</small>
             </span>
@@ -240,11 +259,11 @@ export function Library({
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
-                {words ? "Live co-op" : "Live multiplayer"}
+                {coop ? "Live co-op" : "Live multiplayer"}
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                {words ? "Play with agent" : "Play against agent"}
+                {coop ? "Play with agent" : "Play against agent"}
               </span>
             </div>
           </div>
@@ -252,7 +271,9 @@ export function Library({
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {words ? (
+            {noir ? (
+              <NoirPreview />
+            ) : words ? (
               <WordPreview />
             ) : shoot ? (
               <SkirmishPreview arena={room.arena} />
@@ -263,7 +284,12 @@ export function Library({
             )}
             <div className="preview-caption">
               <span>
-                <i /> {words ? "Puzzle preview" : "Arena preview"}
+                <i />{" "}
+                {noir
+                  ? "Blackwater after dark"
+                  : words
+                  ? "Puzzle preview"
+                  : "Arena preview"}
               </span>
               <span>{info.arenas[room.arena]}</span>
             </div>
@@ -275,7 +301,7 @@ export function Library({
             </div>
             <div className="library-setting">
               <span className="library-section-label">
-                {words ? "Mode" : "Arena"}
+                {coop ? "Mode" : "Arena"}
               </span>
               <div className="library-arena-options">
                 {["open", "islands"].map((arena) => (
@@ -287,7 +313,7 @@ export function Library({
                   >
                     <span
                       className={`arena-mini ${
-                        words
+                        coop
                           ? arena === "open"
                             ? "word-timed"
                             : "word-relaxed"
@@ -329,7 +355,7 @@ export function Library({
                   ? "Your shared table is still open. Return to see the players."
                   : server
                   ? "Play with teammates, Game Player agents, or both in the same live match."
-                  : words
+                  : coop
                   ? "Play with a Game Player offline. Connect to PureServer to solve with your teammates."
                   : "Play against a Game Player agent offline. Connect to PureServer for live team multiplayer."}
               </p>
@@ -348,7 +374,11 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
-          {words ? (
+          {noir ? (
+            <span>
+              <kbd>↑ ← ↓ →</kbd> Walk <kbd>E</kbd> Investigate
+            </span>
+          ) : words ? (
             <span>
               <kbd>A–Z</kbd> Type or tap letters
             </span>
@@ -367,9 +397,11 @@ export function Library({
               <kbd>Enter</kbd> Add word
             </span>
           ) : (
-            <span>
-              <kbd>{shoot ? "P" : "Space"}</kbd> Pause
-            </span>
+            !noir && (
+              <span>
+                <kbd>{shoot ? "P" : "Space"}</kbd> Pause
+              </span>
+            )
           )}
           {shoot && (
             <span>

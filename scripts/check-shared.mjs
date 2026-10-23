@@ -317,6 +317,40 @@ try {
     "word pause"
   );
   assert.deepEqual(states[a.name].state, states[b.name].state);
+  leader.action({ type: "lobby" });
+  await wait(() => states[a.name].state.phase === "lobby", "noir lobby");
+  leader.action({ type: "game", game: "noir" });
+  await wait(() => states[b.name].state.game === "noir", "shared noir choice");
+  leader.action({ type: "start" });
+  await wait(
+    () => states[b.name].state.board?.kind === "noir",
+    "live city starts"
+  );
+  const origin = states[a.name].state.board.players[0].x;
+  ca.steer({ x: 1, y: 0 });
+  cb.steer({ view: "eyes", turn: 1 });
+  await wait(
+    () => states[b.name].state.board.players[0].x > origin + 20,
+    "noir walking replicates"
+  );
+  ca.steer({ x: 0, y: 0 });
+  cb.steer({ view: "eyes", turn: 0 });
+  assert.ok(
+    states[a.name].state.board.players[1].angle > -Math.PI / 2,
+    "first-person turns replicate"
+  );
+  await wait(
+    () => states[b.name].state.board.drops.some((d) => d.by === 2),
+    "agent physically recovers evidence",
+    25000
+  );
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "noir pauses"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
+  assert.ok(states[b.name].state.board.teamScore >= 10);
   leader.action({ type: "resume" });
   await wait(() => !states[a.name].state.paused, "resume before migration");
   leader.close();
@@ -329,7 +363,7 @@ try {
     );
   }, "host migration pauses");
   console.log(
-    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, Word Loom concurrent answers/shared hints/agent help, live scores for all games, host migration."
+    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, Word Loom concurrent answers/shared hints/agent help, The Ninth Bell walking/first-person turns/shared evidence, live scores for all games, host migration."
   );
 } finally {
   for (const c of connections) c.close();

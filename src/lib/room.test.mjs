@@ -117,3 +117,20 @@ test("Word Loom accepts either teammate, blocks paused answers and awards a shar
   assert.equal(s.scores.a, 1);
   assert.equal(s.board.teamScore, 0);
 });
+
+test("The Ninth Bell shares movement and perspective inputs, pauses, and retains human control", () => {
+  let s = createRoom("Noir", a, "noir");
+  s = cmd(s, "b", { type: "join" });
+  s = cmd(s, "a", { type: "bot" });
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.countdown, 0);
+  assert.equal(s.board.kind, "noir");
+  const x = s.board.players[0].x,
+    angle = s.board.players[1].angle;
+  s = advance(s, { a: { x: 1, bot: true }, b: { view: "eyes", turn: 1 } });
+  assert.ok(s.board.players[0].x > x);
+  assert.ok(Math.abs(s.board.players[1].angle - angle - 0.11) < 1e-8);
+  s = cmd(s, "a", { type: "pause" });
+  assert.equal(advance(s, { a: { x: 1 } }), s);
+  assert.equal(cmd(s, "b", { type: "interact" }), s);
+});
