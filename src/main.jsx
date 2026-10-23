@@ -1,3 +1,5 @@
+import { ActiveGames } from "./ActiveGames.jsx";
+import { TeamPicker } from "./TeamPicker.jsx";
 import { LetterArena } from "./LetterArena.jsx";
 import { newLetters } from "./lib/letters.mjs";
 import "./tether.css";
@@ -45,14 +47,18 @@ function App() {
     [busy, setBusy] = useState(false),
     [roomPath, setRoomPath] = useState(""),
     [fullscreen, setFullscreen] = useState(false),
-    [invite, setInvite] = useState(false),
+    [invite, setInvite] = useState(null),
     [server, setServer] = useState(null),
     [joinCode, setJoinCode] = useState(""),
-    [code, setCode] = useState("");
+    [code, setCode] = useState(""),
+    [wantedRoom, setWantedRoom] = useState(""),
+    [sentInvites, setSentInvites] = useState([]),
+    [sending, setSending] = useState(false);
   const connection = useRef(null),
     directions = useRef({}),
     localRef = useRef(local),
-    surface = useRef(null);
+    surface = useRef(null),
+    requestedResource = useRef("");
   localRef.current = local;
   const s = remote?.state || local,
     id = remote ? remote.id : "local",
@@ -97,6 +103,34 @@ function App() {
       done = true;
     };
   }, []);
+  useEffect(() => {
+    const receive = (resource) => {
+      const path = resource?.path;
+      if (
+        typeof path !== "string" ||
+        !/^\/Workspace\/Games\/[A-F0-9]{8}\.puregames$/.test(path)
+      )
+        return;
+      setScreen("table");
+      if (requestedResource.current === path) return;
+      requestedResource.current = path;
+      setWantedRoom(path);
+    };
+    let done = false;
+    void bridge.waitForReady().then((meta) => {
+      if (!done) receive(meta.viewport?.resource);
+    });
+    const off = bridge.onEvent("resource.open", receive);
+    return () => {
+      done = true;
+      off();
+    };
+  }, []);
+  useEffect(() => {
+    if (!server || !wantedRoom) return;
+    setWantedRoom("");
+    if (wantedRoom !== roomPath) void openRoom(wantedRoom);
+  }, [server, wantedRoom]);
   const request = (op, path, content) =>
     server?.native
       ? bridge.call("collab.remote", [{ op, path, content }])
@@ -203,7 +237,7 @@ function App() {
         );
       const saved = JSON.parse(await request("read", path));
       if (saved.format !== "puregames-room" || saved.version !== 1)
-        throw Error("This is not a supported PureGames room.");
+        throw Error("This is not a supported PureGames game.");
       // Retired games return to a Ribbon Run lobby when an older room is reopened.
       if (saved.state && !Object.hasOwn(GAMES, saved.state.game))
         delete saved.state;
@@ -211,11 +245,13 @@ function App() {
       if (!session?.url)
         throw Error("This host does not support a PureServer live connection.");
       connection.current?.close();
+      requestedResource.current = path;
       setRoomPath(path);
       setCode(path.split("/").pop().replace(".puregames", ""));
-      setInvite(false);
+      setInvite(null);
       setRemote({ state: null, connected: false, id: "", peers: new Map() });
       setScreen("table");
+      setSentInvites([]);
       connection.current = connectRoom({
         session,
         saved,
@@ -224,19 +260,31 @@ function App() {
         onChange: setRemote,
         bridge,
       });
+      return path;
     } catch (e) {
+      requestedResource.current = "";
       setError(e.message);
     } finally {
       setBusy(false);
     }
   }
-  function leave() {
+  function leave(destination = server ? "active" : "library") {
+    requestedResource.current = "";
     connection.current?.close();
     connection.current = null;
     setRemote(null);
-    setLocal((v) => ({ ...v, paused: true }));
-    setScreen("table");
+    setLocal(initial(s.game));
+    directions.current = {};
+    setRoomPath("");
+    setCode("");
+    setScreen(destination);
     setError("");
+  }
+  function showInvite(mode) {
+    setLocal((v) => ({ ...v, paused: true }));
+    setError("");
+    setJoinCode("");
+    setInvite(mode);
   }
   async function playNow() {
     if (letters && !remote) {
@@ -246,15 +294,15 @@ function App() {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     } else if (server) {
-      setInvite(true);
+      showInvite("choose");
     } else {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     }
   }
   function robot() {
-    setInvite(false);
-    if (remote) leave();
+    setInvite(null);
+    if (remote) leave("table");
     setLocal((v) => {
       const fresh =
         v.phase === "lobby" || v.phase === "finished" ? v : initial(v.game);
@@ -270,7 +318,26 @@ function App() {
   }
   async function inviteTeam() {
     const next = crypto.randomUUID().slice(0, 8).toUpperCase();
-    await openRoom(`${ROOT}/${next}.puregames`, true);
+    return openRoom(`${ROOT}/${next}.puregames`, true);
+  }
+  async function invitePeople(people) {
+    setSending(true);
+    setError("");
+    try {
+      const path = remote ? roomPath : await inviteTeam();
+      if (!path) throw Error("The game could not be opened. Try again.");
+      await bridge.call("collab.invite", [
+        { path, people: people.map((p) => p.id), title: gameName },
+      ]);
+      setSentInvites(people);
+      setInvite(null);
+      setScreen("table");
+    } catch (e) {
+      setError(e.message);
+      setInvite("team");
+    } finally {
+      setSending(false);
+    }
   }
   const ready =
     (letters ? s.seats.length === 1 : s.seats.length >= 2) &&
@@ -290,22 +357,36 @@ function App() {
     >
       <div className="game-toolbar">
         <div className="game-title">
-          {screen !== "library" && (
+          <button
+            onClick={() => {
+              if (!remote) setLocal((v) => ({ ...v, paused: true }));
+              setScreen("library");
+            }}
+            aria-label="Game library"
+          >
+            Games
+          </button>
+          {server && (
             <button
-              onClick={() => {
-                if (remote) action({ type: "pause" });
-                else setLocal((v) => ({ ...v, paused: true }));
-                setScreen("library");
-              }}
-              aria-label="Back to games"
+              className={screen === "active" ? "selected" : ""}
+              onClick={() => setScreen("active")}
             >
-              ‹ Games
+              Active games
             </button>
           )}
-          <strong>{screen === "library" ? "Game library" : gameName}</strong>
-          {screen !== "library" && (
+          {remote && screen !== "table" && (
+            <button onClick={() => setScreen("table")}>Back to game</button>
+          )}
+          <strong>
+            {screen === "active"
+              ? "Your team"
+              : screen === "library"
+              ? "Game library"
+              : gameName}
+          </strong>
+          {screen === "table" && (
             <span>
-              {remote ? s.name : letters ? "Solo session" : "Local table"}
+              {remote ? "Team game" : letters ? "Solo game" : "Local game"}
             </span>
           )}
         </div>
@@ -315,13 +396,31 @@ function App() {
           >
             {remote
               ? connected
-                ? "● Connected"
+                ? `● ${peers.size} ${
+                    peers.size === 1 ? "person" : "people"
+                  } connected`
                 : "○ Reconnecting"
               : server
               ? "● PureServer"
               : "● Local play"}
           </span>
-          {remote && <button onClick={leave}>Leave room</button>}
+          {remote ? (
+            <>
+              <button
+                onClick={() => connection.current?.reconnect()}
+                disabled={busy}
+              >
+                Reconnect
+              </button>
+              <button onClick={() => leave()} disabled={busy}>
+                Stop playing
+              </button>
+            </>
+          ) : (
+            server && (
+              <button onClick={() => showInvite("join")}>Enter code</button>
+            )
+          )}
           <button
             onClick={full}
             aria-label={fullscreen ? "Exit full screen" : "Full screen"}
@@ -331,7 +430,7 @@ function App() {
           </button>
         </div>
       </div>
-      {error && (
+      {error && !invite && (
         <div className="notice" role="alert">
           {error}
           <button onClick={() => setError("")} aria-label="Dismiss message">
@@ -344,13 +443,29 @@ function App() {
           {remote.error}
         </div>
       )}
-      {screen === "library" ? (
+      {screen === "active" && server ? (
+        <ActiveGames
+          currentPath={roomPath}
+          busy={busy}
+          onJoin={openRoom}
+          onReturn={() => setScreen("table")}
+          onLibrary={() => {
+            if (remote) leave("library");
+            else setScreen("library");
+          }}
+        />
+      ) : screen === "library" ? (
         <Library
           room={s}
           server={server}
           remote={remote}
           onOpen={() => setScreen("table")}
           onSelect={(game) => {
+            if (remote) {
+              leave("library");
+              setLocal(initial(game));
+              return;
+            }
             if (!remote)
               setLocal((v) =>
                 v.game === game
@@ -391,9 +506,17 @@ function App() {
             else if (!remote && letters && s.paused) action({ type: "resume" });
           }}
         />
+      ) : remote?.state?.ended ? (
+        <div className="active-empty">
+          <h2>This game has ended</h2>
+          <p>Start another game or see what your teammates are playing.</p>
+          <button className="primary" onClick={() => leave()}>
+            Active games
+          </button>
+        </div>
       ) : remote && !remote.state ? (
         <div className="empty-state">
-          Connecting to room… <button onClick={leave}>Cancel</button>
+          Connecting to game… <button onClick={() => leave()}>Cancel</button>
         </div>
       ) : (
         <>
@@ -539,6 +662,14 @@ function App() {
               )}
               {!letters && (
                 <div className="arena-actions">
+                  {s.phase !== "lobby" && hostControls && (
+                    <button
+                      disabled={!connected}
+                      onClick={() => action({ type: "lobby" })}
+                    >
+                      Reset round
+                    </button>
+                  )}
                   {s.phase === "playing" ? (
                     <button
                       className="primary"
@@ -786,7 +917,7 @@ function App() {
                         className="wide"
                         onClick={() => action({ type: "lobby" })}
                       >
-                        Edit table
+                        Players & settings
                       </button>
                     )}
                   </>
@@ -799,29 +930,57 @@ function App() {
                 </div>
                 {remote && (
                   <div className="invite-summary">
-                    <span className="section-label">Invite a teammate</span>
-                    <p className="note">
-                      They choose Play, enter this invitation code and select
-                      Join game.
-                    </p>
-                    <input
-                      className="invite-code"
-                      aria-label="Room code"
-                      readOnly
-                      value={code}
-                      onFocus={(e) => e.target.select()}
-                    />
-                    <p className="note">
-                      Add a Game Player if you want a robot at the table too.
-                    </p>
+                    <span className="section-label">Teammates</span>
+                    <button
+                      className="primary wide"
+                      disabled={busy || sending || s.seats.length >= 4}
+                      onClick={() => showInvite("team")}
+                    >
+                      Add player
+                    </button>
+                    {sentInvites.length > 0 && (
+                      <p className="note" role="status">
+                        Invitation sent to{" "}
+                        {sentInvites.map((p) => p.name).join(", ")}. They can
+                        press Join from their notification.
+                      </p>
+                    )}
+                    {hostControls && (
+                      <button
+                        className="wide"
+                        onClick={() => action({ type: "end" })}
+                      >
+                        End game for everyone
+                      </button>
+                    )}
+                    <details>
+                      <summary>Invite with a code instead</summary>
+                      <p className="note">
+                        Your teammate chooses Join game in the toolbar and
+                        enters this code. Both names must appear here before you
+                        start.
+                      </p>
+                      <input
+                        className="invite-code"
+                        aria-label="Game code"
+                        readOnly
+                        value={code}
+                        onFocus={(e) => e.target.select()}
+                      />
+                      <p className="note">
+                        {peers.size < 2
+                          ? "Only you are connected. Your teammate must join this code, not start a different game."
+                          : "Everyone sees the same live game. You can add Game Players too."}
+                      </p>
+                    </details>
                   </div>
                 )}
                 {remote && (
                   <details>
-                    <summary>Room details</summary>
+                    <summary>Connection details</summary>
                     <p className="note">
-                      Invite teammates to PureGames → Play → this room. Access
-                      follows the folder.
+                      Connected to {server?.organisation || "PureServer"}.
+                      Everyone must use the same server and game code.
                     </p>
                     <code>{roomPath}</code>
                   </details>
@@ -837,8 +996,8 @@ function App() {
             <span>
               {remote
                 ? hostControls
-                  ? "You coordinate this room"
-                  : "Connected to room coordinator"
+                  ? "You host this game"
+                  : "Connected to game host"
                 : "No server required"}
             </span>
           </div>
@@ -850,46 +1009,108 @@ function App() {
             className="play-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Who would you like to play?"
+            aria-label={
+              invite === "team"
+                ? "Invite teammates"
+                : invite === "join"
+                ? "Join a teammate’s game"
+                : "Who would you like to play?"
+            }
           >
             <div className="dialog-head">
-              <h2>Who would you like to play?</h2>
-              <button aria-label="Cancel" onClick={() => setInvite(false)}>
+              <h2>
+                {invite === "team"
+                  ? "Invite teammates"
+                  : invite === "join"
+                  ? "Join a teammate’s game"
+                  : "Who would you like to play?"}
+              </h2>
+              <button
+                aria-label="Cancel"
+                disabled={busy || sending}
+                onClick={() => setInvite(null)}
+              >
                 ×
               </button>
             </div>
             <p>
-              Connected to {server?.organisation || "PureServer"}. Play with a
-              Game Player or invite people from your team.
+              Connected to {server?.organisation || "PureServer"}.
+              {invite === "team"
+                ? " Choose people from your organisation. They receive a Join invitation on their desktop or in PureCloud."
+                : invite === "join"
+                ? " Enter the code shown on your teammate’s game."
+                : " Start a new game or join a teammate."}
             </p>
-            <button className="primary" onClick={robot}>
-              {coop ? "Play with Game Player" : "Play against Game Player"}
-            </button>
-            <button className="secondary" disabled={busy} onClick={inviteTeam}>
-              {busy ? "Creating invitation…" : "Invite teammates"}
-            </button>
-            <label className="inline-label" htmlFor="room-code">
-              Have an invitation?
-            </label>
-            <input
-              id="room-code"
-              className="invite-code"
-              value={joinCode}
-              placeholder="Room code"
-              maxLength={8}
-              onChange={(e) =>
-                setJoinCode(
-                  e.target.value.toUpperCase().replace(/[^A-F0-9]/g, "")
-                )
-              }
-            />
-            <button
-              className="secondary"
-              disabled={joinCode.length !== 8 || busy}
-              onClick={() => openRoom(`${ROOT}/${joinCode}.puregames`)}
-            >
-              Join game
-            </button>
+            {error && (
+              <div className="notice" role="alert">
+                {error}
+              </div>
+            )}
+            {invite === "team" ? (
+              <TeamPicker
+                bridge={bridge}
+                limit={remote ? 4 - s.seats.length : 3}
+                busy={busy || sending}
+                onInvite={invitePeople}
+              />
+            ) : invite === "choose" ? (
+              <>
+                <button className="primary" disabled={busy} onClick={robot}>
+                  {coop ? "Play with Game Player" : "Play against Game Player"}
+                </button>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => showInvite("team")}
+                >
+                  Invite teammates
+                </button>
+                <div className="join-divider">Already have a code?</div>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => showInvite("join")}
+                >
+                  Join a teammate’s game
+                </button>
+              </>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (/^[A-F0-9]{8}$/.test(joinCode) && !busy)
+                    void openRoom(`${ROOT}/${joinCode}.puregames`);
+                }}
+              >
+                <label className="inline-label" htmlFor="room-code">
+                  Game code
+                </label>
+                <input
+                  id="room-code"
+                  className="invite-code"
+                  value={joinCode}
+                  placeholder="8-character code"
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setError("");
+                    setJoinCode(
+                      e.target.value.toUpperCase().replace(/[\s-]/g, "")
+                    );
+                  }}
+                />
+                <button
+                  className="primary"
+                  type="submit"
+                  disabled={!/^[A-F0-9]{8}$/.test(joinCode) || busy}
+                >
+                  {busy ? "Joining game…" : "Join game"}
+                </button>
+                <p>You’ll see your teammate’s name and share the same round.</p>
+              </form>
+            )}
           </section>
         </div>
       )}

@@ -199,3 +199,28 @@ test("solo game selection cannot evict a multiplayer table or launch with multip
   solo = cmd(solo, "a", { type: "bot" });
   assert.equal(cmd(solo, "a", { type: "start" }).phase, "playing");
 });
+
+test("ending a game is host-only and cannot be restarted by a delayed command", () => {
+  const s = createRoom("Test", a);
+  assert.equal(cmd(s, "b", { type: "end" }), s);
+  const ended = cmd(s, "a", { type: "end" });
+  assert.ok(ended.ended);
+  assert.ok(ended.paused);
+  assert.equal(cmd(ended, "a", { type: "lobby" }), ended);
+});
+test("a returning person recovers their seat and score without changing the live board", () => {
+  let s = createRoom("Test", { ...a, userId: "account-a" });
+  s = cmd(s, "b", { type: "join" });
+  s = cmd(s, "a", { type: "start" });
+  s.scores.a = 2;
+  const present = new Map([
+    ["new-a", { id: "new-a", userId: "account-a", name: "Ada" }],
+    ["b", b],
+  ]);
+  const next = command(s, "new-a", { type: "join" }, "b", present);
+  assert.equal(next.seats.length, 2);
+  assert.equal(next.seats[0].id, "new-a");
+  assert.equal(next.scores["new-a"], 2);
+  assert.equal(next.board, s.board);
+  assert.ok(next.paused);
+});
