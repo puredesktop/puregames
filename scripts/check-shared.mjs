@@ -43,61 +43,67 @@ const url = `ws://127.0.0.1:${
   server.address().port
 }/v1/collab?path=${encodeURIComponent(path)}&mode=edit`;
 const brokerPath = process.argv[3];
-let nativeBridge;
-if (brokerPath) {
-  const { createRemoteCollab } = await import(pathToFileURL(brokerPath).href);
-  const token = createSession(db, a, "1".repeat(64), 1).token;
-  const listeners = new Set();
-  const broker = createRemoteCollab({
-    state: async () => ({
-      server: url.replace("ws:", "http:").split("/v1/")[0],
-      person: { name: a.name },
-      organisation: { name: "Games test" },
-    }),
-    token: async () => token,
-    request: async (_server, _path, body) =>
-      body ? { result: await workspace.readText(path) } : {},
-  });
-  const owner = { owner: 1, tabId: "test-native", appSlug: "puregames" };
-  nativeBridge = {
-    call: (_method, [request]) =>
-      broker.call(owner, request, (frame) => {
-        for (const fn of listeners) fn(frame);
+const nativeBridges = new Map();
+if (brokerPath)
+  for (const player of [a, b]) {
+    const { createRemoteCollab } = await import(pathToFileURL(brokerPath).href);
+    const token = createSession(
+      db,
+      player,
+      (player === a ? "1" : "2").repeat(64),
+      1
+    ).token;
+    const listeners = new Set();
+    const broker = createRemoteCollab({
+      state: async () => ({
+        server: url.replace("ws:", "http:").split("/v1/")[0],
+        person: { name: player.name },
+        organisation: { name: "Games test" },
       }),
-    onEvent: (_name, fn) => {
-      listeners.add(fn);
-      return () => listeners.delete(fn);
-    },
-  };
-  nativeBridge.session = await nativeBridge.call("collab.remote", [
-    { op: "join", path },
-  ]);
-  await assert.rejects(
-    broker.call(
-      { ...owner, owner: 2 },
-      { op: "connect", conn: "stolen", token: nativeBridge.session.token },
-      () => {}
-    )
-  );
-  await assert.rejects(
-    nativeBridge.call("collab.remote", [
-      { op: "read", path: "/Workspace/../private" },
-    ])
-  );
-}
+      token: async () => token,
+      request: async (_server, _path, body) =>
+        body ? { result: await workspace.readText(path) } : {},
+    });
+    const owner = { owner: 1, tabId: "test-native", appSlug: "puregames" };
+    const nativeBridge = {
+      call: (_method, [request]) =>
+        broker.call(owner, structuredClone(request), (frame) => {
+          for (const fn of listeners) fn(structuredClone(frame));
+        }),
+      onEvent: (_name, fn) => {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
+      },
+    };
+    nativeBridge.session = await nativeBridge.call("collab.remote", [
+      { op: "join", path },
+    ]);
+    await assert.rejects(
+      broker.call(
+        { ...owner, owner: 2 },
+        { op: "connect", conn: "stolen", token: nativeBridge.session.token },
+        () => {}
+      )
+    );
+    await assert.rejects(
+      nativeBridge.call("collab.remote", [
+        { op: "read", path: "/Workspace/../private" },
+      ])
+    );
+    nativeBridges.set(player, nativeBridge);
+  }
 const states = {},
   connections = [];
 const connect = (p, key) =>
   connectRoom({
-    bridge: p === a ? nativeBridge : undefined,
-    session:
-      p === a && nativeBridge
-        ? nativeBridge.session
-        : {
-            url,
-            token: createSession(db, p, key.repeat(64), 1).token,
-            user: { name: p.name },
-          },
+    bridge: nativeBridges.get(p),
+    session: nativeBridges.has(p)
+      ? nativeBridges.get(p).session
+      : {
+          url,
+          token: createSession(db, p, key.repeat(64), 1).token,
+          user: { name: p.name },
+        },
     saved: {},
     name: "Integration table",
     write: (text) => workspace.write(path, text),
@@ -169,8 +175,36 @@ try {
     states[b.name].state.board.players.every((p) => p.points > 0),
     "live survival scores replicate"
   );
+  const originalId = states[a.name].id;
+  const originalSeats = states[a.name].state.seats.map((p) => p.id);
+  ca.reconnect();
+  await wait(() => !states[a.name].connected, "manual retry disconnects");
+  await wait(
+    () =>
+      states[a.name].connected &&
+      states[a.name].peers.size === 2 &&
+      states[b.name].peers.size === 2,
+    "manual retry rejoins both desktops"
+  );
+  assert.equal(
+    states[a.name].id,
+    originalId,
+    "reconnect preserves player identity"
+  );
+  assert.deepEqual(
+    states[a.name].state.seats.map((p) => p.id),
+    originalSeats,
+    "retry does not create duplicate seats"
+  );
   leader.action({ type: "lobby" });
-  await wait(() => states[a.name].state.phase === "lobby", "lobby");
+  await wait(
+    () =>
+      states[a.name].state.phase === "lobby" &&
+      states[b.name].state.phase === "lobby",
+    "reset reaches both desktops"
+  );
+  assert.equal(states[a.name].state.board, null);
+  assert.equal(states[b.name].state.board, null);
   leader.action({ type: "game", game: "orbit" });
   await wait(
     () =>

@@ -146,6 +146,7 @@ export function connectRoom({
           if (encoding.length(e) > 1) send(encoding.toUint8Array(e));
           if (type === sync.messageYjsSyncStep2 && !ready) {
             ready = true;
+            saveError = "";
             awareness.setLocalState({ player: me });
             notify();
           }
@@ -168,6 +169,11 @@ export function connectRoom({
         [...awareness.getStates().keys()],
         "remote"
       );
+      // A new socket receives a fresh presence snapshot. Forget remote clocks
+      // as well as states so unchanged peers are accepted immediately, rather
+      // than disappearing until their next periodic awareness heartbeat.
+      for (const clientId of awareness.meta.keys())
+        if (clientId !== doc.clientID) awareness.meta.delete(clientId);
       notify();
       if (!closed) retry = setTimeout(connect, 1500);
     };
@@ -225,6 +231,15 @@ export function connectRoom({
   }, 100);
   connect();
   return {
+    reconnect() {
+      if (disposed) return;
+      closed = false;
+      saveError = "";
+      clearTimeout(retry);
+      // Keep the Y.Doc and player identity so a retry cannot leave a duplicate seat.
+      if (ws?.readyState === 3) connect();
+      else ws?.close();
+    },
     action(action) {
       if (ready && snapshot())
         actions.set(id, {

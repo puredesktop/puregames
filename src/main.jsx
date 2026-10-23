@@ -45,7 +45,7 @@ function App() {
     [busy, setBusy] = useState(false),
     [roomPath, setRoomPath] = useState(""),
     [fullscreen, setFullscreen] = useState(false),
-    [invite, setInvite] = useState(false),
+    [invite, setInvite] = useState(null),
     [server, setServer] = useState(null),
     [joinCode, setJoinCode] = useState(""),
     [code, setCode] = useState("");
@@ -213,7 +213,7 @@ function App() {
       connection.current?.close();
       setRoomPath(path);
       setCode(path.split("/").pop().replace(".puregames", ""));
-      setInvite(false);
+      setInvite(null);
       setRemote({ state: null, connected: false, id: "", peers: new Map() });
       setScreen("table");
       connection.current = connectRoom({
@@ -234,9 +234,18 @@ function App() {
     connection.current?.close();
     connection.current = null;
     setRemote(null);
-    setLocal((v) => ({ ...v, paused: true }));
-    setScreen("table");
+    setLocal(initial(s.game));
+    directions.current = {};
+    setRoomPath("");
+    setCode("");
+    setScreen("library");
     setError("");
+  }
+  function showInvite(mode) {
+    setLocal((v) => ({ ...v, paused: true }));
+    setError("");
+    setJoinCode("");
+    setInvite(mode);
   }
   async function playNow() {
     if (letters && !remote) {
@@ -246,14 +255,14 @@ function App() {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     } else if (server) {
-      setInvite(true);
+      showInvite("choose");
     } else {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     }
   }
   function robot() {
-    setInvite(false);
+    setInvite(null);
     if (remote) leave();
     setLocal((v) => {
       const fresh =
@@ -305,7 +314,11 @@ function App() {
           <strong>{screen === "library" ? "Game library" : gameName}</strong>
           {screen !== "library" && (
             <span>
-              {remote ? s.name : letters ? "Solo session" : "Local table"}
+              {remote
+                ? `Room ${code}`
+                : letters
+                ? "Solo session"
+                : "Local table"}
             </span>
           )}
         </div>
@@ -315,13 +328,34 @@ function App() {
           >
             {remote
               ? connected
-                ? "● Connected"
+                ? `● ${peers.size} ${
+                    peers.size === 1 ? "person" : "people"
+                  } connected`
                 : "○ Reconnecting"
               : server
               ? "● PureServer"
               : "● Local play"}
           </span>
-          {remote && <button onClick={leave}>Leave room</button>}
+          {remote ? (
+            <>
+              <button
+                onClick={() => connection.current?.reconnect()}
+                disabled={busy}
+              >
+                Reconnect
+              </button>
+              <button onClick={inviteTeam} disabled={busy || !remote.state}>
+                New room
+              </button>
+              <button onClick={leave} disabled={busy}>
+                Leave room
+              </button>
+            </>
+          ) : (
+            server && (
+              <button onClick={() => showInvite("join")}>Join game</button>
+            )
+          )}
           <button
             onClick={full}
             aria-label={fullscreen ? "Exit full screen" : "Full screen"}
@@ -331,7 +365,7 @@ function App() {
           </button>
         </div>
       </div>
-      {error && (
+      {error && !invite && (
         <div className="notice" role="alert">
           {error}
           <button onClick={() => setError("")} aria-label="Dismiss message">
@@ -539,6 +573,14 @@ function App() {
               )}
               {!letters && (
                 <div className="arena-actions">
+                  {s.phase !== "lobby" && hostControls && (
+                    <button
+                      disabled={!connected}
+                      onClick={() => action({ type: "lobby" })}
+                    >
+                      Reset round
+                    </button>
+                  )}
                   {s.phase === "playing" ? (
                     <button
                       className="primary"
@@ -801,8 +843,8 @@ function App() {
                   <div className="invite-summary">
                     <span className="section-label">Invite a teammate</span>
                     <p className="note">
-                      They choose Play, enter this invitation code and select
-                      Join game.
+                      Your teammate chooses Join game in the toolbar and enters
+                      this code. Both names must appear here before you start.
                     </p>
                     <input
                       className="invite-code"
@@ -812,7 +854,9 @@ function App() {
                       onFocus={(e) => e.target.select()}
                     />
                     <p className="note">
-                      Add a Game Player if you want a robot at the table too.
+                      {peers.size < 2
+                        ? "Only you are connected. Your teammate must join this code, not create a new room."
+                        : "Everyone sees the same live game. You can add Game Players too."}
                     </p>
                   </div>
                 )}
@@ -820,8 +864,8 @@ function App() {
                   <details>
                     <summary>Room details</summary>
                     <p className="note">
-                      Invite teammates to PureGames → Play → this room. Access
-                      follows the folder.
+                      Connected to {server?.organisation || "PureServer"}.
+                      Everyone must use the same server and room code.
                     </p>
                     <code>{roomPath}</code>
                   </details>
@@ -850,46 +894,95 @@ function App() {
             className="play-dialog"
             role="dialog"
             aria-modal="true"
-            aria-label="Who would you like to play?"
+            aria-label={
+              invite === "join"
+                ? "Join a teammate’s game"
+                : "Who would you like to play?"
+            }
           >
             <div className="dialog-head">
-              <h2>Who would you like to play?</h2>
-              <button aria-label="Cancel" onClick={() => setInvite(false)}>
+              <h2>
+                {invite === "join"
+                  ? "Join a teammate’s game"
+                  : "Who would you like to play?"}
+              </h2>
+              <button
+                aria-label="Cancel"
+                disabled={busy}
+                onClick={() => setInvite(null)}
+              >
                 ×
               </button>
             </div>
             <p>
-              Connected to {server?.organisation || "PureServer"}. Play with a
-              Game Player or invite people from your team.
+              Connected to {server?.organisation || "PureServer"}.
+              {invite === "join"
+                ? " Enter the code shown on your teammate’s game."
+                : " Start a new game or join a teammate."}
             </p>
-            <button className="primary" onClick={robot}>
-              {coop ? "Play with Game Player" : "Play against Game Player"}
-            </button>
-            <button className="secondary" disabled={busy} onClick={inviteTeam}>
-              {busy ? "Creating invitation…" : "Invite teammates"}
-            </button>
-            <label className="inline-label" htmlFor="room-code">
-              Have an invitation?
-            </label>
-            <input
-              id="room-code"
-              className="invite-code"
-              value={joinCode}
-              placeholder="Room code"
-              maxLength={8}
-              onChange={(e) =>
-                setJoinCode(
-                  e.target.value.toUpperCase().replace(/[^A-F0-9]/g, "")
-                )
-              }
-            />
-            <button
-              className="secondary"
-              disabled={joinCode.length !== 8 || busy}
-              onClick={() => openRoom(`${ROOT}/${joinCode}.puregames`)}
-            >
-              Join game
-            </button>
+            {error && (
+              <div className="notice" role="alert">
+                {error}
+              </div>
+            )}
+            {invite === "choose" ? (
+              <>
+                <button className="primary" disabled={busy} onClick={robot}>
+                  {coop ? "Play with Game Player" : "Play against Game Player"}
+                </button>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={inviteTeam}
+                >
+                  {busy ? "Creating room…" : "Create team game"}
+                </button>
+                <div className="join-divider">Already have a code?</div>
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => showInvite("join")}
+                >
+                  Join a teammate’s game
+                </button>
+              </>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (/^[A-F0-9]{8}$/.test(joinCode) && !busy)
+                    void openRoom(`${ROOT}/${joinCode}.puregames`);
+                }}
+              >
+                <label className="inline-label" htmlFor="room-code">
+                  Room code
+                </label>
+                <input
+                  id="room-code"
+                  className="invite-code"
+                  value={joinCode}
+                  placeholder="8-character code"
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={busy}
+                  onChange={(e) => {
+                    setError("");
+                    setJoinCode(
+                      e.target.value.toUpperCase().replace(/[\s-]/g, "")
+                    );
+                  }}
+                />
+                <button
+                  className="primary"
+                  type="submit"
+                  disabled={!/^[A-F0-9]{8}$/.test(joinCode) || busy}
+                >
+                  {busy ? "Joining game…" : "Join game"}
+                </button>
+                <p>You’ll see your teammate’s name and share the same round.</p>
+              </form>
+            )}
           </section>
         </div>
       )}

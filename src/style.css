@@ -104,6 +104,8 @@ button[aria-pressed="true"] {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .connection {
   font-size: 10px;
@@ -505,6 +507,13 @@ code {
 }
 .play-dialog .room-item {
   text-align: left;
+}
+.join-divider {
+  border-top: 1px solid #ccd7ce;
+  margin-top: 20px;
+  padding-top: 16px;
+  font-size: 12px;
+  color: #52685a;
 }
 .software {
   position: relative;
