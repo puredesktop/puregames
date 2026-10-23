@@ -1522,3 +1522,98 @@ code {
     font-size: 21px;
   }
 }
+
+.library-game-icon.shoot {
+  background: #3b3a4e;
+  color: #f6bd9a;
+}
+.skirmish-arena {
+  background: #0b1525;
+  border-color: #526376;
+  border-radius: 8px;
+}
+.skirmish-arena .orbit-topline {
+  color: #abbcc6;
+}
+.skirmish-scores {
+  top: 45px;
+}
+.skirmish-scores > div {
+  background: #122538ed;
+  padding: 5px 12px;
+}
+.skirmish-scores .hull-pips {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+.hull-pips i {
+  width: 12px;
+  height: 3px;
+  background: #ffffff20;
+  border-radius: 2px;
+}
+.hull-pips i.filled {
+  background: var(--pilot);
+}
+.skirmish-overlay {
+  background: #0b152550;
+}
+.skirmish-overlay h2 {
+  color: #eefaff;
+}
+.skirmish-flightbar kbd {
+  border: 1px solid #8192a45c;
+  border-radius: 3px;
+  padding: 2px 5px;
+  margin-right: 5px;
+  font: 9px inherit;
+}
+.respawn-notice {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  transform: translate(-50%, -50%);
+  background: #0a182ad9;
+  color: #e5eef7;
+  padding: 14px 22px;
+  border: 1px solid #65748e;
+  border-radius: 6px;
+  font-size: 19px;
+  pointer-events: none;
+}
+.arena-mini.deep-space,
+.arena-mini.asteroids {
+  background: #233248;
+  border-color: #6b7d90;
+}
+.arena-mini.deep-space i {
+  width: 2px;
+  height: 2px;
+  background: #e2e8ed;
+}
+.arena-mini.asteroids i {
+  width: 6px;
+  height: 6px;
+  background: #8a939f;
+  transform: rotate(30deg);
+  border-radius: 2px;
+}
+@media (max-width: 800px) {
+  .skirmish-scores {
+    top: 39px;
+  }
+  .skirmish-scores > div {
+    min-width: 35px;
+    padding: 4px 6px;
+  }
+  .skirmish-scores b {
+    font-size: 17px;
+  }
+  .skirmish-scores .hull-pips {
+    gap: 3px;
+  }
+  .hull-pips i {
+    width: 8px;
+  }
+}

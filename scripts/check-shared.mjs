@@ -185,7 +185,7 @@ try {
       states[a.name].state.board.tick > 1,
     "orbit launch"
   );
-  ca.steer({ x: 0, y: -1, dash: true });
+  ca.steer({ turn: -1, thrust: 1, dash: true });
   await wait(
     () => states[b.name].state.board.players[0].cooldown > 0,
     "native pilot dash replicated"
@@ -213,6 +213,49 @@ try {
     "pause to compare live scores"
   );
   assert.deepEqual(states[a.name].state, states[b.name].state);
+  leader.action({ type: "lobby" });
+  await wait(() => states[a.name].state.phase === "lobby", "shootout lobby");
+  leader.action({ type: "game", game: "shoot" });
+  await wait(
+    () =>
+      states[a.name].state.game === "shoot" &&
+      states[b.name].state.game === "shoot",
+    "shared shootout choice"
+  );
+  leader.action({ type: "start" });
+  await wait(
+    () =>
+      states[b.name].state.board?.kind === "shoot" &&
+      states[b.name].state.board.tick > 1,
+    "shootout launch"
+  );
+  const beforeTurn = states[a.name].state.board.players[0].angle;
+  ca.steer({ turn: 1, thrust: 1, fire: true });
+  await wait(
+    () =>
+      states[b.name].state.board.events.some(
+        (e) => e.type === "fire" && e.owner === 0
+      ),
+    "native laser fire replicated"
+  );
+  const turned = states[b.name].state.board.players[0].angle - beforeTurn;
+  assert.ok(
+    turned > 0 && turned < Math.PI / 2,
+    "small flight turns replicate without a right-angle snap"
+  );
+  await wait(
+    () =>
+      states[a.name].state.board.players.some((p) => p.score > 0) &&
+      states[b.name].state.board.players.some((p) => p.score > 0),
+    "shared knockout scores",
+    25000
+  );
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "shootout pause"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
   leader.action({ type: "resume" });
   await wait(() => !states[a.name].state.paused, "resume before migration");
   leader.close();
@@ -225,7 +268,7 @@ try {
     );
   }, "host migration pauses");
   console.log(
-    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, live scores for both games, host migration."
+    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, live scores for all games, host migration."
   );
 } finally {
   for (const c of connections) c.close();

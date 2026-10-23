@@ -1,4 +1,6 @@
 import React from "react";
+import { GAMES } from "./lib/games.mjs";
+import { SkirmishPreview } from "./SkirmishArena.jsx";
 import { OrbitPreview } from "./OrbitArena.jsx";
 
 function RibbonMark() {
@@ -120,6 +122,22 @@ function ArenaPreview({ islands }) {
     </svg>
   );
 }
+export function FlightKeys() {
+  return (
+    <>
+      <span>
+        <kbd>←</kbd>
+        <kbd>→</kbd> Turn
+      </span>
+      <span>
+        <kbd>↑</kbd> Thrust
+      </span>
+      <span>
+        <kbd>↓</kbd> Brake
+      </span>
+    </>
+  );
+}
 export function Library({
   room,
   server,
@@ -129,15 +147,17 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const orbit = room.game === "orbit";
+  const orbit = room.game === "orbit",
+    shoot = room.game === "shoot",
+    info = GAMES[room.game];
   const islands = room.arena === "islands";
   return (
     <section className="games-library" aria-label="Game library">
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library <span>02</span>
+          Library <span>03</span>
         </div>
-        {["orbit", "ribbon"].map((game) => (
+        {["shoot", "orbit", "ribbon"].map((game) => (
           <button
             key={game}
             className={`library-game ${room.game === game ? "selected" : ""}`}
@@ -146,7 +166,16 @@ export function Library({
             onClick={() => onSelect(game)}
           >
             <span className={`library-game-icon ${game}`}>
-              {game === "orbit" ? (
+              {game === "shoot" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
+                  <path
+                    d="m27 3 1 4M33 10l4 1M9 27l-4 5M14 30l-3 5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "orbit" ? (
                 <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <circle
                     cx="20"
@@ -172,12 +201,10 @@ export function Library({
             </span>
             <span>
               <strong>
-                {game === "orbit" ? "Orbit Rally" : "Ribbon Run"}
-                {game === "orbit" && <em className="library-new">NEW</em>}
+                {GAMES[game].name}
+                {game === "shoot" && <em className="library-new">NEW</em>}
               </strong>
-              <small>
-                {game === "orbit" ? "Cosmic score chase" : "Trail survival"}
-              </small>
+              <small>{GAMES[game].subtitle}</small>
             </span>
           </button>
         ))}
@@ -189,10 +216,8 @@ export function Library({
       <main className="library-workspace">
         <header className="library-heading">
           <div>
-            <span className="library-section-label">
-              {orbit ? "Real-time · Score chase" : "Real-time · Survival"}
-            </span>
-            <h1>{orbit ? "Orbit Rally" : "Ribbon Run"}</h1>
+            <span className="library-section-label">{info.genre}</span>
+            <h1>{info.name}</h1>
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
@@ -208,34 +233,24 @@ export function Library({
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {orbit ? <OrbitPreview /> : <ArenaPreview islands={islands} />}
+            {shoot ? (
+              <SkirmishPreview arena={room.arena} />
+            ) : orbit ? (
+              <OrbitPreview />
+            ) : (
+              <ArenaPreview islands={islands} />
+            )}
             <div className="preview-caption">
               <span>
                 <i /> Arena preview
               </span>
-              <span>
-                {orbit
-                  ? islands
-                    ? "Solar storm"
-                    : "Nebula"
-                  : islands
-                  ? "Four islands"
-                  : "Open field"}
-              </span>
+              <span>{info.arenas[room.arena]}</span>
             </div>
           </div>
           <aside className="library-inspector">
             <div className="library-description">
-              <h2>
-                {orbit
-                  ? "Fortune favours the fast."
-                  : "Make your next turn count."}
-              </h2>
-              <p>
-                {orbit
-                  ? "Scoop up starlight. Dash through danger. Bank your haul before a rival beats you to 20."
-                  : "Leave a trail. Cut off your rivals. Keep moving until you’re the last one left."}
-              </p>
+              <h2>{info.tagline}</h2>
+              <p>{info.description}</p>
             </div>
             <div className="library-setting">
               <span className="library-section-label">Arena</span>
@@ -249,7 +264,15 @@ export function Library({
                   >
                     <span
                       className={`arena-mini ${
-                        orbit ? (arena === "open" ? "nebula" : "storm") : arena
+                        shoot
+                          ? arena === "open"
+                            ? "deep-space"
+                            : "asteroids"
+                          : orbit
+                          ? arena === "open"
+                            ? "nebula"
+                            : "storm"
+                          : arena
                       }`}
                     >
                       <i />
@@ -257,13 +280,7 @@ export function Library({
                       <i />
                       <i />
                     </span>
-                    {orbit
-                      ? arena === "open"
-                        ? "Nebula"
-                        : "Solar storm"
-                      : arena === "open"
-                      ? "Open field"
-                      : "Four islands"}
+                    {info.arenas[arena]}
                   </button>
                 ))}
               </div>
@@ -302,25 +319,30 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
+          {room.game !== "ribbon" ? (
+            <FlightKeys />
+          ) : (
+            <span>
+              <kbd>↑</kbd>
+              <kbd>←</kbd>
+              <kbd>↓</kbd>
+              <kbd>→</kbd> Steer
+            </span>
+          )}
           <span>
-            <kbd>↑</kbd>
-            <kbd>←</kbd>
-            <kbd>↓</kbd>
-            <kbd>→</kbd> Steer
+            <kbd>{shoot ? "P" : "Space"}</kbd> Pause
           </span>
-          <span>
-            <kbd>Space</kbd> Pause
-          </span>
+          {shoot && (
+            <span>
+              <kbd>Space</kbd> Hold to fire
+            </span>
+          )}
           {orbit && (
             <span>
               <kbd>Shift</kbd> Dash
             </span>
           )}
-          <span>
-            {orbit
-              ? "First to 20 · 90 second rounds"
-              : "Last marker moving wins"}
-          </span>
+          <span>{info.goal}</span>
         </footer>
       </main>
     </section>

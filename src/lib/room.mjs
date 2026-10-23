@@ -1,10 +1,16 @@
+import { newSkirmish, stepSkirmish, skirmishBot } from "./skirmish.mjs";
 import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
+const engines = {
+  ribbon: { create: newRace, step, bot: steer },
+  orbit: { create: newOrbit, step: stepOrbit, bot: orbitBot },
+  shoot: { create: newSkirmish, step: stepSkirmish, bot: skirmishBot },
+};
 export const CAPACITY = 4;
 export const createRoom = (name, owner, game = "ribbon") => ({
   version: 1,
   name: name.slice(0, 60),
-  game: game === "orbit" ? "orbit" : "ribbon",
+  game: Object.hasOwn(engines, game) ? game : "ribbon",
   phase: "lobby",
   revision: 0,
   round: 0,
@@ -63,7 +69,7 @@ export function command(s, actor, action, host, present) {
     action.type === "game" &&
     admin &&
     s.phase === "lobby" &&
-    ["ribbon", "orbit"].includes(action.game)
+    Object.hasOwn(engines, action.game)
   ) {
     next = { ...s, game: action.game, board: null, scores: {}, round: 0 };
   } else if (
@@ -86,10 +92,7 @@ export function command(s, actor, action, host, present) {
       round: s.round + 1,
       paused: false,
       countdown: 30,
-      board:
-        s.game === "orbit"
-          ? newOrbit(s.seats.length, s.arena)
-          : newRace(s.seats.length, s.arena),
+      board: engines[s.game].create(s.seats.length, s.arena),
     };
   } else if (action.type === "pause" && seat >= 0 && s.phase === "playing") {
     next = { ...s, paused: true };
@@ -112,18 +115,13 @@ export function advance(s, inputs = {}) {
   const turns = {};
   s.seats.forEach((p, i) => {
     if (s.board.players[i].alive)
-      turns[i] = p.bot
-        ? s.game === "orbit"
-          ? orbitBot(s.board, i)
-          : steer(s.board, i)
-        : inputs[p.id];
+      turns[i] = p.bot ? engines[s.game].bot(s.board, i) : inputs[p.id];
   });
-  const board =
-    s.game === "orbit" ? stepOrbit(s.board, turns) : step(s.board, turns);
+  const board = engines[s.game].step(s.board, turns);
   const scores = { ...s.scores };
   if (board.done)
     board.players.forEach((p, i) => {
-      if (s.game === "orbit" ? board.winners.includes(i) : p.alive)
+      if (s.game !== "ribbon" ? board.winners.includes(i) : p.alive)
         scores[s.seats[i].id] = (scores[s.seats[i].id] || 0) + 1;
     });
   return {

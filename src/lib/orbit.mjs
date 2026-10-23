@@ -1,3 +1,4 @@
+import { flightInput } from "./flight.mjs";
 // Original deterministic arena simulation. One coordinator advances each 100 ms step.
 export const ORBIT_WIDTH = 900,
   ORBIT_HEIGHT = 600,
@@ -109,14 +110,15 @@ export function stepOrbit(s, inputs = {}) {
       stun: Math.max(0, old.stun - 1),
       boost: Math.max(0, old.boost - 1),
     };
-    const input = orbitInput(inputs[i]);
+    const input = flightInput(p, inputs[i]);
     if (!p.stun) {
-      p.vx = p.vx * 0.77 + input.x * 2.7;
-      p.vy = p.vy * 0.77 + input.y * 2.7;
-      if (input.x || input.y) p.angle = Math.atan2(input.y, input.x);
-      if (input.dash && !p.cooldown && (input.x || input.y)) {
-        p.vx += input.x * 18;
-        p.vy += input.y * 18;
+      const drag = input.brake ? 0.5 : 0.92;
+      p.vx = p.vx * drag + input.x;
+      p.vy = p.vy * drag + input.y;
+      p.angle = input.angle;
+      if (input.dash && !p.cooldown && input.aligned) {
+        p.vx += Math.cos(p.angle) * 18;
+        p.vy += Math.sin(p.angle) * 18;
         p.cooldown = 40;
         p.boost = 4;
         p.shield = Math.max(p.shield, 4);

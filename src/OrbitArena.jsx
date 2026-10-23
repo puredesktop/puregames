@@ -8,6 +8,8 @@ import {
   ORBIT_LIMIT,
   ORBIT_TARGET,
 } from "./lib/orbit.mjs";
+import { useFlightControls } from "./useFlightControls.js";
+import { interpolateAngle } from "./lib/flight.mjs";
 import { colours } from "./Arena.jsx";
 const TAU = Math.PI * 2;
 const stars = Array.from({ length: 150 }, (_, i) => ({
@@ -174,7 +176,7 @@ function draw(c, s, previous, t, seats, history, me) {
     }
     c.save();
     c.translate(x, y);
-    c.rotate(p.angle);
+    c.rotate(interpolateAngle(old.angle, p.angle, t));
     c.shadowBlur = 15;
     c.shadowColor = colour;
     c.fillStyle = colour;
@@ -354,68 +356,8 @@ export function OrbitArena({
   onPause,
   playerIndex = 0,
 }) {
-  const root = useRef(null),
-    keys = useRef(new Set()),
-    send = useRef(onSteer);
-  send.current = onSteer;
-  useEffect(() => {
-    const emit = () => {
-      const k = keys.current;
-      send.current(
-        {
-          x: +k.has("ArrowRight") - k.has("ArrowLeft"),
-          y: +k.has("ArrowDown") - k.has("ArrowUp"),
-          dash: k.has("Shift"),
-        },
-        0
-      );
-      send.current(
-        {
-          x: +k.has("d") - k.has("a"),
-          y: +k.has("s") - k.has("w"),
-          dash: k.has("f"),
-        },
-        1
-      );
-    };
-    const timer = setInterval(emit, 70);
-    const clear = () => {
-      keys.current.clear();
-      emit();
-    };
-    window.addEventListener("blur", clear);
-    return () => {
-      clearInterval(timer);
-      window.removeEventListener("blur", clear);
-      clear();
-    };
-  }, []);
-  const key = (e, down) => {
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (
-      [
-        "ArrowUp",
-        "ArrowRight",
-        "ArrowDown",
-        "ArrowLeft",
-        "w",
-        "a",
-        "s",
-        "d",
-        "f",
-        "Shift",
-      ].includes(k)
-    ) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (down) keys.current.add(k);
-      else keys.current.delete(k);
-    }
-    if (e.code === "Space" && down && !e.repeat) {
-      e.preventDefault();
-      onPause();
-    }
-  };
+  const root = useRef(null);
+  const controls = useFlightControls(onSteer, onPause, "dash");
   const p = board.players[playerIndex] || board.players[0];
   return (
     <div
@@ -423,10 +365,8 @@ export function OrbitArena({
       className="arena-wrap orbit-arena"
       tabIndex={0}
       role="group"
-      aria-label="Orbit Rally. Arrow keys move, Shift dashes, Space pauses."
-      onKeyDown={(e) => key(e, true)}
-      onKeyUp={(e) => key(e, false)}
-      onBlur={() => keys.current.clear()}
+      aria-label="Orbit Rally. Left and Right turn, Up thrusts, Down brakes. Shift dashes, Space pauses."
+      {...controls}
       onPointerDown={() => root.current?.focus()}
     >
       <OrbitCanvas board={board} seats={seats} me={playerIndex} />
@@ -475,7 +415,7 @@ export function OrbitArena({
               : lobby
               ? "Collect glowing cores. Bank them in gold gates. First to 20 wins."
               : countdown
-              ? "Arrow keys to move · Shift to dash"
+              ? "← → turn · ↑ thrust · ↓ brake · Shift dashes"
               : "Space to resume"}
           </p>
         </div>

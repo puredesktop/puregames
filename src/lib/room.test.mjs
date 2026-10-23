@@ -36,4 +36,57 @@ test("a disconnect pauses play; absent players block resume", () => {
   assert.equal(advance(s), s);
 });
 
-test("Orbit Rally persists game choice, launches and awards only winning pilots",()=>{let s=createRoom('Orbit',a,'orbit');s=cmd(s,'a',{type:'bot'});assert.equal(cmd(s,'b',{type:'game',game:'ribbon'}),s);s=cmd(s,'a',{type:'start'});assert.equal(s.board.kind,'orbit');assert.equal(s.countdown,30);s={...s,countdown:0,board:{...s.board,tick:899,players:s.board.players.map((p,i)=>({...p,score:i===0?9:3}))}};s=advance(s);assert.equal(s.phase,'finished');assert.equal(s.scores.a,1);assert.equal(s.scores[s.seats[1].id],undefined)});
+test("Orbit Rally persists game choice, launches and awards only winning pilots", () => {
+  let s = createRoom("Orbit", a, "orbit");
+  s = cmd(s, "a", { type: "bot" });
+  assert.equal(cmd(s, "b", { type: "game", game: "ribbon" }), s);
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.board.kind, "orbit");
+  assert.equal(s.countdown, 30);
+  s = {
+    ...s,
+    countdown: 0,
+    board: {
+      ...s.board,
+      tick: 899,
+      players: s.board.players.map((p, i) => ({
+        ...p,
+        score: i === 0 ? 9 : 3,
+      })),
+    },
+  };
+  s = advance(s);
+  assert.equal(s.phase, "finished");
+  assert.equal(s.scores.a, 1);
+  assert.equal(s.scores[s.seats[1].id], undefined);
+});
+
+test("Star Skirmish shared rules launch, pause and award wins once", () => {
+  let s = createRoom("Shootout", a, "shoot");
+  s = cmd(s, "b", { type: "join" });
+  s = cmd(s, "a", { type: "bot" });
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.board.kind, "shoot");
+  assert.equal(s.board.players.length, 3);
+  s = {
+    ...s,
+    countdown: 0,
+    board: {
+      ...s.board,
+      tick: 899,
+      players: s.board.players.map((p, i) => ({
+        ...p,
+        score: i === 0 ? 4 : 2,
+      })),
+    },
+  };
+  const paused = cmd(s, "a", { type: "pause" });
+  assert.equal(advance(paused), paused);
+  s = advance(s);
+  assert.equal(s.phase, "finished");
+  assert.equal(s.scores.a, 1);
+  assert.equal(advance(s), s);
+  s = cmd(s, "a", { type: "rematch" });
+  assert.equal(s.board.players[0].score, 0);
+  assert.equal(s.scores.a, 1);
+});

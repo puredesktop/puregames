@@ -8,12 +8,15 @@ import { connectRoom } from "./lib/shared.mjs";
 import { Arena, colours } from "./Arena.jsx";
 import { OrbitArena } from "./OrbitArena.jsx";
 import { newOrbit } from "./lib/orbit.mjs";
-import { Library } from "./Library.jsx";
+import { SkirmishArena } from "./SkirmishArena.jsx";
+import { newSkirmish } from "./lib/skirmish.mjs";
+import { GAMES } from "./lib/games.mjs";
+import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
   command(
-    createRoom("Local table", me, "orbit"),
+    createRoom("Local table", me, "shoot"),
     "local",
     { type: "bot" },
     "local",
@@ -45,7 +48,9 @@ function App() {
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
   const orbit = s.game === "orbit",
-    gameName = orbit ? "Orbit Rally" : "Ribbon Run";
+    shoot = s.game === "shoot",
+    game = GAMES[s.game],
+    gameName = game.name;
   const connected = !remote || remote.connected,
     hostControls = !remote || id === host;
   useEffect(() => {
@@ -104,7 +109,7 @@ function App() {
       const who = humans[index];
       if (
         who &&
-        (localRef.current.game === "orbit" ||
+        (localRef.current.game !== "ribbon" ||
           directions.current[who.id] === undefined)
       )
         directions.current[who.id] = direction;
@@ -178,7 +183,7 @@ function App() {
       if (saved.format !== "puregames-room" || saved.version !== 1)
         throw Error("This is not a supported PureGames room.");
       // Retired games return to a Ribbon Run lobby when an older room is reopened.
-      if (saved.state && !["ribbon", "orbit"].includes(saved.state.game))
+      if (saved.state && !Object.hasOwn(GAMES, saved.state.game))
         delete saved.state;
       const session = await request("join", path);
       if (!session?.url)
@@ -336,7 +341,24 @@ function App() {
         <>
           <div className="match">
             <div className="play-surface">
-              {orbit ? (
+              {shoot ? (
+                <SkirmishArena
+                  board={
+                    s.board?.kind === "shoot"
+                      ? s.board
+                      : newSkirmish(Math.max(2, s.seats.length), s.arena)
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  countdown={s.countdown || 0}
+                  lobby={s.phase === "lobby"}
+                  onSteer={steer}
+                  onPause={togglePause}
+                  playerIndex={
+                    remote ? s.seats.findIndex((p) => p.id === id) : 0
+                  }
+                />
+              ) : orbit ? (
                 <OrbitArena
                   board={
                     s.board?.kind === "orbit"
@@ -399,19 +421,28 @@ function App() {
                 )}
               </div>
               <div className="control-strip">
-                <span>
-                  <kbd>↑</kbd>
-                  <kbd>←</kbd>
-                  <kbd>↓</kbd>
-                  <kbd>→</kbd> Steer
-                </span>
+                {s.game !== "ribbon" ? (
+                  <FlightKeys />
+                ) : (
+                  <span>
+                    <kbd>↑</kbd>
+                    <kbd>←</kbd>
+                    <kbd>↓</kbd>
+                    <kbd>→</kbd> Steer
+                  </span>
+                )}
+                {shoot && (
+                  <span>
+                    <kbd>Space</kbd> Hold to fire
+                  </span>
+                )}
                 {orbit && (
                   <span>
                     <kbd>Shift</kbd> Dash
                   </span>
                 )}
                 <span>
-                  <kbd>Space</kbd> Pause / resume
+                  <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
                 </span>
                 <span>
                   <kbd>Esc</kbd> Exit full screen
@@ -445,6 +476,13 @@ function App() {
                           : "Disconnected"}{" "}
                         · {s.scores?.[p.id] || 0} wins
                       </small>
+                      {shoot && s.board?.kind === "shoot" && (
+                        <small>
+                          {s.board.players[i]?.respawn
+                            ? "Respawning…"
+                            : `${s.board.players[i]?.hull ?? 3} / 3 hull`}
+                        </small>
+                      )}
                       {orbit && s.board?.kind === "orbit" && (
                         <small className="orbit-pilot-stat">
                           {s.board.players[i]?.cargo || 0} / 7 cores carried
@@ -456,10 +494,11 @@ function App() {
                       style={{ "--score-colour": colours[i] }}
                     >
                       <b>
-                        {s.board?.players?.[i]?.[orbit ? "score" : "points"] ||
-                          0}
+                        {s.board?.players?.[i]?.[
+                          s.game !== "ribbon" ? "score" : "points"
+                        ] || 0}
                       </b>
-                      <small>points</small>
+                      <small>{shoot ? "knockouts" : "points"}</small>
                     </span>
                     {s.phase === "lobby" && hostControls && p.id !== id && (
                       <button
@@ -515,13 +554,7 @@ function App() {
                           disabled={!hostControls}
                           onClick={() => action({ type: "arena", arena })}
                         >
-                          {orbit
-                            ? arena === "open"
-                              ? "Nebula"
-                              : "Solar storm"
-                            : arena === "open"
-                            ? "Open field"
-                            : "Four islands"}
+                          {game.arenas[arena]}
                         </button>
                       ))}
                     </div>
@@ -532,7 +565,13 @@ function App() {
                         ? "Start when everyone has a seat."
                         : "The coordinator starts the round."
                       : s.seats.filter((p) => !p.bot).length > 1
-                      ? "Player 1: arrows. Player 2: WASD."
+                      ? shoot
+                        ? "Arrows: turn, thrust, brake. Space fires. Player 2: A/D turn, W thrust, S brake, F fires."
+                        : orbit
+                        ? "Arrows: turn, thrust, brake. Player 2: A/D turn, W thrust, S brake, F dashes."
+                        : "Player 1: arrows. Player 2: WASD."
+                      : s.game !== "ribbon"
+                      ? "Left/right turn. Up thrusts. Down brakes."
                       : "Arrow keys to steer. Game Player runs on-device."}
                   </p>
                 </>
@@ -562,16 +601,9 @@ function App() {
               )}
               <div className="rules">
                 <span className="section-label">How to play</span>
-                <p>
-                  {orbit
-                    ? "Collect cyan cores and fly into a gold BANK gate. First to 20 points wins, or highest score after 90 seconds."
-                    : "Keep moving. Avoid every trail, island and border—including your own trail. The last marker moving wins."}
-                </p>
-                <p>
-                  {orbit
-                    ? "Bank 5 or more cores for +2 bonus points. Red hazards spill up to 3 cores. Shift dashes with a brief shield; recharge takes 4 seconds. Nobody is eliminated."
-                    : "Earn 1 point per step survived and 50 bonus points for winning. A simultaneous crash is a draw. Round wins carry across games."}
-                </p>
+                {game.rules.map((rule) => (
+                  <p key={rule}>{rule}</p>
+                ))}
               </div>
               {remote && (
                 <div className="invite-summary">
@@ -607,13 +639,7 @@ function App() {
           <div className="game-statusbar">
             <span>
               {remote ? "Shared table" : "Local session"} ·{" "}
-              {orbit
-                ? s.arena === "islands"
-                  ? "Solar storm"
-                  : "Nebula"
-                : s.arena === "islands"
-                ? "Four islands"
-                : "Open field"}
+              {game.arenas[s.arena]}
             </span>
             <span>
               {remote
