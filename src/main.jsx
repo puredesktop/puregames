@@ -6,6 +6,7 @@ import { createRoom, command, advance } from "./lib/room.mjs";
 import { newRace } from "./lib/trails.mjs";
 import { connectRoom } from "./lib/shared.mjs";
 import { Arena, colours } from "./Arena.jsx";
+import { Library } from "./Library.jsx";
 import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
@@ -19,7 +20,7 @@ const initial = () =>
 const ROOT = "/Workspace/Games";
 const title = "Team game";
 function App() {
-  const [screen, setScreen] = useState("table"),
+  const [screen, setScreen] = useState("library"),
     [local, setLocal] = useState(initial),
     [remote, setRemote] = useState(null),
     [error, setError] = useState(""),
@@ -236,20 +237,24 @@ function App() {
     >
       <div className="game-toolbar">
         <div className="game-title">
-          <button
-            onClick={() => {
-              if (remote) action({ type: "pause" });
-              else setLocal((v) => ({ ...v, paused: true }));
-              setScreen("library");
-            }}
-            aria-label="Back to games"
-          >
-            ‹ Games
-          </button>
+          {screen !== "library" && (
+            <button
+              onClick={() => {
+                if (remote) action({ type: "pause" });
+                else setLocal((v) => ({ ...v, paused: true }));
+                setScreen("library");
+              }}
+              aria-label="Back to games"
+            >
+              ‹ Games
+            </button>
+          )}
           <strong>
             {screen === "library" ? "Game library" : "Ribbon Run"}
           </strong>
-          <span>{remote ? s.name : "Local table"}</span>
+          {screen !== "library" && (
+            <span>{remote ? s.name : "Local table"}</span>
+          )}
         </div>
         <div className="toolbar-actions">
           <span
@@ -287,14 +292,17 @@ function App() {
         </div>
       )}
       {screen === "library" ? (
-        <section className="game-library">
-          <h1>Games</h1>
-          <button className="game-entry" onClick={() => setScreen("table")}>
-            <strong>Ribbon Run</strong>
-            <span>2–4 players · People and Game Players</span>
-            <span>Open game →</span>
-          </button>
-        </section>
+        <Library
+          room={s}
+          server={server}
+          remote={remote}
+          onOpen={() => setScreen("table")}
+          onArena={(arena) => action({ type: "arena", arena })}
+          onPlay={() => {
+            setScreen("table");
+            if (!remote && s.phase !== "playing") void playNow();
+          }}
+        />
       ) : remote && !remote.state ? (
         <div className="empty-state">
           Connecting to room… <button onClick={leave}>Cancel</button>
