@@ -515,6 +515,48 @@ code {
   font-size: 12px;
   color: #52685a;
 }
+.team-picker > input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #c9d5c7;
+  border-radius: 6px;
+  background: #fff;
+  color: #20362c;
+}
+.teammate-list {
+  max-height: 240px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.teammate {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px;
+  cursor: pointer;
+  border-bottom: 1px solid #dce4d9;
+}
+.teammate input {
+  accent-color: #224f40;
+  width: 16px;
+  height: 16px;
+}
+.teammate-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #dbe8de;
+  color: #224f40;
+  font-weight: 600;
+}
+.invite-summary > button {
+  margin: 12px 0;
+}
+.invite-summary details {
+  margin-top: 14px;
+}
 .software {
   position: relative;
 }
@@ -2314,5 +2356,126 @@ code {
   }
   .word-metrics > span {
     font-size: 7px;
+  }
+}
+
+.active-games {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 28px clamp(18px, 4vw, 64px);
+}
+.active-games > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.active-games h1 {
+  font-size: 20px;
+  margin: 0 0 8px;
+}
+.active-games header p,
+.active-empty p {
+  color: var(--muted, #61766b);
+  font-size: 13px;
+}
+.active-list {
+  display: grid;
+  gap: 12px;
+}
+.active-game {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px;
+  border: 1px solid #c8d7ce;
+  background: #f9fbf8;
+  border-radius: 10px;
+}
+.active-game-content {
+  flex: 1;
+  min-width: 0;
+}
+.active-game-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.active-game h2 {
+  font-size: 16px;
+  margin: 0;
+}
+.match-status {
+  font-size: 11px;
+  text-transform: capitalize;
+  border: 1px solid #c8d7ce;
+  padding: 4px 9px;
+  border-radius: 20px;
+}
+.match-status.playing {
+  color: #205b46;
+  background: #dceee3;
+}
+.matchup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  margin: 14px 0 8px;
+}
+.matchup small {
+  font-size: 10px;
+  margin-left: 5px;
+  color: #61766b;
+}
+.matchup .away {
+  opacity: 0.6;
+}
+.versus {
+  font-size: 11px;
+  color: #76867e;
+}
+.active-mark {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #17313a;
+  display: grid;
+  place-items: center;
+  color: #79e0ce;
+  font-size: 22px;
+  font-weight: 600;
+}
+.active-mark.noir {
+  color: #e5c285;
+  background: #272520;
+}
+.active-mark.words {
+  color: #e8d9bf;
+  background: #504236;
+}
+.active-empty {
+  margin: auto;
+  padding: 50px 24px;
+  text-align: center;
+}
+.active-empty h2 {
+  font-size: 18px;
+}
+@media (max-width: 650px) {
+  .active-games > header,
+  .active-game {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .active-game > button {
+    margin-left: 72px;
+  }
+  .active-mark {
+    flex-shrink: 0;
   }
 }

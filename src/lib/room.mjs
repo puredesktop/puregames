@@ -29,10 +29,27 @@ export const createRoom = (name, owner, game = "ribbon") => ({
   arena: "open",
 });
 export function command(s, actor, action, host, present) {
+  if (s.ended) return s;
   const seat = s.seats.findIndex((p) => p.id === actor);
   const admin = actor === host;
   let next;
-  if (
+  const returning =
+    action.type === "join" && seat < 0 && present.get(actor)?.userId
+      ? s.seats.findIndex(
+          (p) =>
+            !p.bot &&
+            p.userId === present.get(actor).userId &&
+            !present.has(p.id)
+        )
+      : -1;
+  if (returning >= 0) {
+    const old = s.seats[returning];
+    const seats = [...s.seats];
+    seats[returning] = { ...old, id: actor, name: present.get(actor).name };
+    const scores = { ...s.scores, [actor]: s.scores[old.id] || 0 };
+    delete scores[old.id];
+    next = { ...s, seats, scores, paused: true };
+  } else if (
     action.type === "join" &&
     s.game !== "letters" &&
     s.phase === "lobby" &&
@@ -44,7 +61,12 @@ export function command(s, actor, action, host, present) {
       ...s,
       seats: [
         ...s.seats,
-        { id: actor, name: present.get(actor).name.slice(0, 60), bot: false },
+        {
+          id: actor,
+          userId: present.get(actor).userId,
+          name: present.get(actor).name.slice(0, 60),
+          bot: false,
+        },
       ],
     };
   } else if (action.type === "leave" && s.phase === "lobby") {
@@ -149,6 +171,8 @@ export function command(s, actor, action, host, present) {
         ? noirCommand(s.board, seat, action, s.seats)
         : wordCommand(s.board, seat, action);
     if (board !== s.board) next = finishBoard(s, board);
+  } else if (action.type === "end" && admin) {
+    next = { ...s, ended: true, paused: true };
   } else if (action.type === "lobby" && admin) {
     next = { ...s, phase: "lobby", paused: true, board: null };
   }

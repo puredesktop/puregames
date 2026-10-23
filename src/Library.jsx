@@ -178,7 +178,6 @@ export function Library({
               key={game}
               className={`library-game ${room.game === game ? "selected" : ""}`}
               aria-current={room.game === game ? "page" : undefined}
-              disabled={!!remote && room.game !== game}
               onClick={() => onSelect(game)}
             >
               <span className={`library-game-icon ${game}`}>

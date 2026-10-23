@@ -1,3 +1,4 @@
+import { sessionSummary } from "./session-summary.mjs";
 import { remoteSocket } from "./bridge-socket.mjs";
 import * as Y from "yjs";
 import * as sync from "y-protocols/sync";
@@ -24,7 +25,12 @@ export function connectRoom({
     inputs = doc.getMap("inputs");
   const awareness = new awarenessProtocol.Awareness(doc),
     id = String(doc.clientID);
-  const me = { id, name: session.user.name || "Player", bot: false };
+  const me = {
+    id,
+    userId: session.user.id,
+    name: session.user.name || "Player",
+    bot: false,
+  };
   let ws,
     closed = false,
     ready = false,
@@ -35,7 +41,8 @@ export function connectRoom({
     lastSave = 0,
     savePending = false,
     saveError = "",
-    hostBefore;
+    hostBefore,
+    lastSummary = "";
   const seen = new Map();
   const peers = () =>
     new Map(
@@ -43,8 +50,15 @@ export function connectRoom({
         .filter(([, p]) => p.player)
         .map(([key, p]) => [String(key), p.player])
     );
-  const host = () =>
-    [...peers().keys()].sort((a, b) => Number(a) - Number(b))[0];
+  const host = () => {
+    const present = peers();
+    // Keep the table's first human in charge while present. An invited peer
+    // must not silently take the Play button just because its random ID is lower.
+    const owner = map.get("state")?.seats.find((p) => !p.bot)?.id;
+    return present.has(owner)
+      ? owner
+      : [...present.keys()].sort((a, b) => Number(a) - Number(b))[0];
+  };
   const snapshot = () => map.get("state");
   const notify = () =>
     !disposed &&
@@ -97,7 +111,7 @@ export function connectRoom({
       );
       saveError = "";
     } catch {
-      saveError = "The room is live, but its checkpoint could not be saved.";
+      saveError = "The game is live, but its checkpoint could not be saved.";
     } finally {
       savePending = false;
       notify();
@@ -158,7 +172,7 @@ export function connectRoom({
           );
       } catch {
         saveError =
-          "The room sent an unreadable update. Reopen it to reconnect.";
+          "The game sent an unreadable update. Reconnect to try again.";
         notify();
       }
     };
@@ -185,7 +199,7 @@ export function connectRoom({
   const timer = setInterval(() => {
     if (!ready || !snapshot()) return;
     if (
-      snapshot().phase === "lobby" &&
+      !snapshot().ended &&
       !snapshot().seats.some((p) => p.id === id) &&
       Date.now() - lastJoin > 1000
     ) {
@@ -224,6 +238,12 @@ export function connectRoom({
       s = advance(s, directions);
     }
     if (s !== snapshot()) map.set("state", s);
+    const summary = sessionSummary(s, peers());
+    const encoded = JSON.stringify(summary);
+    if (encoded !== lastSummary) {
+      lastSummary = encoded;
+      doc.getMap("session").set("summary", summary);
+    }
     if (now - lastSave > 2000) {
       lastSave = now;
       void persist();
