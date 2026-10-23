@@ -8,6 +8,8 @@ assert (root / 'dist/index.html').is_file(), 'Run npm run build first'
 payload = io.BytesIO()
 with zipfile.ZipFile(payload, 'w', zipfile.ZIP_DEFLATED) as archive:
     archive.write(root / 'plugin.json', 'plugin.json')
+    for notice in ('LICENSE', 'THIRD_PARTY_NOTICES.md'):
+        archive.write(root / notice, notice)
     for file in (root / 'dist').rglob('*'):
         if file.is_file(): archive.write(file, str(file.relative_to(root)))
 target = root.parent / 'PureGames-runtime.pureapp'
