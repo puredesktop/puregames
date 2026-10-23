@@ -1,3 +1,5 @@
+import { LetterArena } from "./LetterArena.jsx";
+import { newLetters } from "./lib/letters.mjs";
 import "./tether.css";
 import { TetherArena } from "./TetherArena.jsx";
 import { newTether } from "./lib/tether.mjs";
@@ -21,15 +23,18 @@ import { newWords } from "./lib/words.mjs";
 import { GAMES } from "./lib/games.mjs";
 import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
+import "./letters.css";
 const me = { id: "local", name: "You", bot: false };
-const initial = () =>
-  command(
-    createRoom("Local table", me, "tether"),
-    "local",
-    { type: "bot" },
-    "local",
-    new Map([["local", me]])
-  );
+const initial = (game = "letters") =>
+  game === "letters"
+    ? createRoom("Solo session", me, game)
+    : command(
+        createRoom("Local table", me, game),
+        "local",
+        { type: "bot" },
+        "local",
+        new Map([["local", me]])
+      );
 const ROOT = "/Workspace/Games";
 const title = "Team game";
 function App() {
@@ -55,7 +60,8 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
-  const tether = s.game === "tether",
+  const letters = s.game === "letters",
+    tether = s.game === "tether",
     noir = s.game === "noir",
     coop = ["noir", "words", "tether"].includes(s.game),
     orbit = s.game === "orbit",
@@ -129,8 +135,10 @@ function App() {
   };
   const focusArena = () =>
     surface.current
-      ?.querySelector(words ? ".word-entry" : ".arena-wrap")
-      ?.focus();
+      ?.querySelector(
+        letters ? ".letter-entry" : words ? ".word-entry" : ".arena-wrap"
+      )
+      ?.focus({ preventScroll: true });
   const togglePause = () => {
     if (s.phase === "playing") {
       action({ type: s.paused ? "resume" : "pause" });
@@ -231,7 +239,10 @@ function App() {
     setError("");
   }
   async function playNow() {
-    if (remote) {
+    if (letters && !remote) {
+      action({ type: s.phase === "finished" ? "rematch" : "start" });
+      focusArena();
+    } else if (remote) {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     } else if (server) {
@@ -246,7 +257,7 @@ function App() {
     if (remote) leave();
     setLocal((v) => {
       const fresh =
-        v.phase === "lobby" || v.phase === "finished" ? v : initial();
+        v.phase === "lobby" || v.phase === "finished" ? v : initial(v.game);
       return command(
         fresh,
         "local",
@@ -262,11 +273,18 @@ function App() {
     await openRoom(`${ROOT}/${next}.puregames`, true);
   }
   const ready =
-    s.seats.length >= 2 && s.seats.every((p) => p.bot || peers.has(p.id));
+    (letters ? s.seats.length === 1 : s.seats.length >= 2) &&
+    s.seats.every((p) => p.bot || peers.has(p.id));
   return (
     <div
       className={`game-viewport software ${
-        tether ? "tether-mode" : noir ? "noir-mode" : ""
+        letters
+          ? "letters-mode"
+          : tether
+          ? "tether-mode"
+          : noir
+          ? "noir-mode"
+          : ""
       } ${fullscreen ? "is-fullscreen" : ""}`}
       ref={surface}
     >
@@ -286,7 +304,9 @@ function App() {
           )}
           <strong>{screen === "library" ? "Game library" : gameName}</strong>
           {screen !== "library" && (
-            <span>{remote ? s.name : "Local table"}</span>
+            <span>
+              {remote ? s.name : letters ? "Solo session" : "Local table"}
+            </span>
           )}
         </div>
         <div className="toolbar-actions">
@@ -332,21 +352,43 @@ function App() {
           onOpen={() => setScreen("table")}
           onSelect={(game) => {
             if (!remote)
+              setLocal((v) =>
+                v.game === game
+                  ? v
+                  : {
+                      ...v,
+                      game,
+                      seats:
+                        game === "letters"
+                          ? [me]
+                          : v.game === "letters"
+                          ? initial(game).seats
+                          : v.seats,
+                      arena: "open",
+                      phase: "lobby",
+                      board: null,
+                      paused: true,
+                      countdown: 0,
+                      scores: {},
+                      round: 0,
+                    }
+              );
+          }}
+          onArena={(arena) => {
+            if (letters && !remote && s.phase === "finished")
               setLocal((v) => ({
                 ...v,
-                game,
+                arena,
                 phase: "lobby",
                 board: null,
                 paused: true,
-                countdown: 0,
-                scores: {},
-                round: 0,
               }));
+            else action({ type: "arena", arena });
           }}
-          onArena={(arena) => action({ type: "arena", arena })}
           onPlay={() => {
             setScreen("table");
             if (!remote && s.phase !== "playing") void playNow();
+            else if (!remote && letters && s.paused) action({ type: "resume" });
           }}
         />
       ) : remote && !remote.state ? (
@@ -358,7 +400,9 @@ function App() {
           <div className="match">
             <div
               className={`play-surface ${
-                tether
+                letters
+                  ? "letters-surface"
+                  : tether
                   ? "tether-surface"
                   : noir
                   ? "noir-surface"
@@ -367,7 +411,20 @@ function App() {
                   : ""
               }`}
             >
-              {tether ? (
+              {letters ? (
+                <LetterArena
+                  onPause={togglePause}
+                  onPlay={playNow}
+                  board={
+                    s.board?.kind === "letters"
+                      ? s.board
+                      : newLetters(1, s.arena, s.round + 1)
+                  }
+                  paused={s.paused}
+                  lobby={s.phase === "lobby"}
+                  onAction={action}
+                />
+              ) : tether ? (
                 <TetherArena
                   board={
                     s.board?.kind === "tether"
@@ -480,36 +537,42 @@ function App() {
                   onPause={togglePause}
                 />
               )}
-              <div className="arena-actions">
-                {s.phase === "playing" ? (
-                  <button
-                    className="primary"
-                    disabled={!connected || (s.paused && !hostControls)}
-                    onClick={togglePause}
-                  >
-                    {s.paused ? "Resume" : "Pause"}
-                  </button>
-                ) : (
-                  <button
-                    className="primary"
-                    disabled={!connected || !hostControls || !ready}
-                    onClick={playNow}
-                  >
-                    {s.phase === "finished" ? "Play again" : "Play"}
-                  </button>
-                )}
-                {remote && s.phase === "lobby" && (
-                  <span>
-                    {s.seats.length < 2
-                      ? "Waiting for a teammate…"
-                      : hostControls
-                      ? ready
-                        ? "Everyone is ready"
-                        : "A player disconnected"
-                      : "Waiting for the coordinator"}
-                  </span>
-                )}
-              </div>
+              {!letters && (
+                <div className="arena-actions">
+                  {s.phase === "playing" ? (
+                    <button
+                      className="primary"
+                      disabled={!connected || (s.paused && !hostControls)}
+                      onClick={togglePause}
+                    >
+                      {s.paused ? "Resume" : "Pause"}
+                    </button>
+                  ) : (
+                    <button
+                      className="primary"
+                      disabled={!connected || !hostControls || !ready}
+                      onClick={playNow}
+                    >
+                      {s.phase === "finished"
+                        ? letters
+                          ? "Next board"
+                          : "Play again"
+                        : "Play"}
+                    </button>
+                  )}
+                  {remote && s.phase === "lobby" && (
+                    <span>
+                      {s.seats.length < 2
+                        ? "Waiting for a teammate…"
+                        : hostControls
+                        ? ready
+                          ? "Everyone is ready"
+                          : "A player disconnected"
+                        : "Waiting for the coordinator"}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="control-strip">
                 {tether ? (
                   <span>
@@ -521,7 +584,7 @@ function App() {
                     <kbd>↑ ← ↓ →</kbd> Walk <kbd>Shift</kbd> Run <kbd>E</kbd>{" "}
                     Interact
                   </span>
-                ) : words ? (
+                ) : words || letters ? (
                   <span>
                     <kbd>A–Z</kbd> Type or tap letters
                   </span>
@@ -545,7 +608,7 @@ function App() {
                     <kbd>Shift</kbd> Dash
                   </span>
                 )}
-                {words ? (
+                {words || letters ? (
                   <span>
                     <kbd>Enter</kbd> Add word
                   </span>
@@ -562,202 +625,209 @@ function App() {
                 </span>
               </div>
             </div>
-            <aside className="players-panel">
-              <div className="section-heading">
-                <span className="section-label">
-                  {coop ? "Team contributions" : "Live scores"}
-                </span>
-                <span>{s.seats.length} / 4</span>
-              </div>
-              <ol className="players">
-                {s.seats.map((p, i) => (
-                  <li key={p.id}>
-                    <span
-                      className="player-dot"
-                      style={{ background: colours[i] }}
-                    >
-                      {i + 1}
-                    </span>
-                    <div>
-                      <b>
-                        {p.name}
-                        {remote && p.id === id ? " · you" : ""}
-                      </b>
-                      <small>
-                        {p.bot
-                          ? "Game Player"
-                          : peers.has(p.id)
-                          ? "Ready"
-                          : "Disconnected"}{" "}
-                        · {s.scores?.[p.id] || 0} {coop ? "completed" : "wins"}
-                      </small>
-                      {shoot && s.board?.kind === "shoot" && (
+            {!letters && (
+              <aside className="players-panel">
+                <div className="section-heading">
+                  <span className="section-label">
+                    {coop ? "Team contributions" : "Live scores"}
+                  </span>
+                  <span>{s.seats.length} / 4</span>
+                </div>
+                <ol className="players">
+                  {s.seats.map((p, i) => (
+                    <li key={p.id}>
+                      <span
+                        className="player-dot"
+                        style={{ background: colours[i] }}
+                      >
+                        {i + 1}
+                      </span>
+                      <div>
+                        <b>
+                          {p.name}
+                          {remote && p.id === id ? " · you" : ""}
+                        </b>
                         <small>
-                          {s.board.players[i]?.respawn
-                            ? "Respawning…"
-                            : `${s.board.players[i]?.hull ?? 3} / 3 hull`}
+                          {p.bot
+                            ? "Game Player"
+                            : peers.has(p.id)
+                            ? "Ready"
+                            : "Disconnected"}{" "}
+                          · {s.scores?.[p.id] || 0}{" "}
+                          {coop ? "completed" : "wins"}
                         </small>
+                        {shoot && s.board?.kind === "shoot" && (
+                          <small>
+                            {s.board.players[i]?.respawn
+                              ? "Respawning…"
+                              : `${s.board.players[i]?.hull ?? 3} / 3 hull`}
+                          </small>
+                        )}
+                        {orbit && s.board?.kind === "orbit" && (
+                          <small className="orbit-pilot-stat">
+                            {s.board.players[i]?.cargo || 0} / 7 cores carried
+                          </small>
+                        )}
+                      </div>
+                      <span
+                        className="live-score"
+                        style={{ "--score-colour": colours[i] }}
+                      >
+                        <b>
+                          {s.board?.players?.[i]?.[
+                            s.game !== "ribbon" ? "score" : "points"
+                          ] || 0}
+                        </b>
+                        <small>{shoot ? "knockouts" : "points"}</small>
+                      </span>
+                      {s.phase === "lobby" && hostControls && p.id !== id && (
+                        <button
+                          className="icon-button"
+                          aria-label={`Remove ${p.name}`}
+                          onClick={() => action({ type: "remove", id: p.id })}
+                        >
+                          −
+                        </button>
                       )}
-                      {orbit && s.board?.kind === "orbit" && (
-                        <small className="orbit-pilot-stat">
-                          {s.board.players[i]?.cargo || 0} / 7 cores carried
-                        </small>
+                    </li>
+                  ))}
+                </ol>
+                {s.phase === "lobby" ? (
+                  <>
+                    <div className="seat-actions">
+                      {hostControls && (
+                        <button
+                          disabled={s.seats.length >= 4}
+                          onClick={() => action({ type: "bot" })}
+                        >
+                          + Game Player
+                        </button>
+                      )}
+                      {!remote && (
+                        <button
+                          disabled={
+                            s.seats.length >= 4 ||
+                            s.seats.filter((p) => !p.bot).length >= 2
+                          }
+                          onClick={() =>
+                            setLocal((v) => ({
+                              ...v,
+                              seats: [
+                                ...v.seats,
+                                {
+                                  id: "local2",
+                                  name: "Player two",
+                                  bot: false,
+                                },
+                              ],
+                              revision: v.revision + 1,
+                            }))
+                          }
+                        >
+                          + Local player
+                        </button>
                       )}
                     </div>
-                    <span
-                      className="live-score"
-                      style={{ "--score-colour": colours[i] }}
-                    >
-                      <b>
-                        {s.board?.players?.[i]?.[
-                          s.game !== "ribbon" ? "score" : "points"
-                        ] || 0}
-                      </b>
-                      <small>{shoot ? "knockouts" : "points"}</small>
-                    </span>
-                    {s.phase === "lobby" && hostControls && p.id !== id && (
-                      <button
-                        className="icon-button"
-                        aria-label={`Remove ${p.name}`}
-                        onClick={() => action({ type: "remove", id: p.id })}
-                      >
-                        −
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              {s.phase === "lobby" ? (
-                <>
-                  <div className="seat-actions">
+                    <div className="setting-section">
+                      <span className="section-label">
+                        {coop ? "Mode" : "Arena"}
+                      </span>
+                      <div className="choice-row">
+                        {["open", "islands"].map((arena) => (
+                          <button
+                            key={arena}
+                            aria-pressed={s.arena === arena}
+                            disabled={!hostControls}
+                            onClick={() => action({ type: "arena", arena })}
+                          >
+                            {game.arenas[arena]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="note">
+                      {remote
+                        ? hostControls
+                          ? "Start when everyone has a seat."
+                          : "The coordinator starts the round."
+                        : tether
+                        ? "Arrows or WASD move. Space hooks. Shift brakes. Player 2 uses WASD, F to hook, X to brake."
+                        : noir
+                        ? "Move with arrows or WASD. Shift runs. E searches or speaks. Player 2 uses WASD and F."
+                        : words
+                        ? "Type or tap the rack. All players work toward the same score."
+                        : s.seats.filter((p) => !p.bot).length > 1
+                        ? shoot
+                          ? "Arrows: turn, thrust, brake. Space fires. Player 2: A/D turn, W thrust, S brake, F fires."
+                          : orbit
+                          ? "Arrows: turn, thrust, brake. Player 2: A/D turn, W thrust, S brake, F dashes."
+                          : "Player 1: arrows. Player 2: WASD."
+                        : s.game !== "ribbon"
+                        ? "Left/right turn. Up thrusts. Down brakes."
+                        : "Arrow keys to steer. Game Player runs on-device."}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="round-status">
+                      <span className="section-label">Round {s.round}</span>
+                      <h3 role="status">
+                        {s.phase === "finished"
+                          ? "Round finished"
+                          : s.paused
+                          ? "Paused"
+                          : s.countdown > 0
+                          ? "Get ready"
+                          : "In play"}
+                      </h3>
+                    </div>
                     {hostControls && (
                       <button
-                        disabled={s.seats.length >= 4}
-                        onClick={() => action({ type: "bot" })}
+                        className="wide"
+                        onClick={() => action({ type: "lobby" })}
                       >
-                        + Game Player
+                        Edit table
                       </button>
                     )}
-                    {!remote && (
-                      <button
-                        disabled={
-                          s.seats.length >= 4 ||
-                          s.seats.filter((p) => !p.bot).length >= 2
-                        }
-                        onClick={() =>
-                          setLocal((v) => ({
-                            ...v,
-                            seats: [
-                              ...v.seats,
-                              { id: "local2", name: "Player two", bot: false },
-                            ],
-                            revision: v.revision + 1,
-                          }))
-                        }
-                      >
-                        + Local player
-                      </button>
-                    )}
-                  </div>
-                  <div className="setting-section">
-                    <span className="section-label">
-                      {coop ? "Mode" : "Arena"}
-                    </span>
-                    <div className="choice-row">
-                      {["open", "islands"].map((arena) => (
-                        <button
-                          key={arena}
-                          aria-pressed={s.arena === arena}
-                          disabled={!hostControls}
-                          onClick={() => action({ type: "arena", arena })}
-                        >
-                          {game.arenas[arena]}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="note">
-                    {remote
-                      ? hostControls
-                        ? "Start when everyone has a seat."
-                        : "The coordinator starts the round."
-                      : tether
-                      ? "Arrows or WASD move. Space hooks. Shift brakes. Player 2 uses WASD, F to hook, X to brake."
-                      : noir
-                      ? "Move with arrows or WASD. Shift runs. E searches or speaks. Player 2 uses WASD and F."
-                      : words
-                      ? "Type or tap the rack. All players work toward the same score."
-                      : s.seats.filter((p) => !p.bot).length > 1
-                      ? shoot
-                        ? "Arrows: turn, thrust, brake. Space fires. Player 2: A/D turn, W thrust, S brake, F fires."
-                        : orbit
-                        ? "Arrows: turn, thrust, brake. Player 2: A/D turn, W thrust, S brake, F dashes."
-                        : "Player 1: arrows. Player 2: WASD."
-                      : s.game !== "ribbon"
-                      ? "Left/right turn. Up thrusts. Down brakes."
-                      : "Arrow keys to steer. Game Player runs on-device."}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="round-status">
-                    <span className="section-label">Round {s.round}</span>
-                    <h3 role="status">
-                      {s.phase === "finished"
-                        ? "Round finished"
-                        : s.paused
-                        ? "Paused"
-                        : s.countdown > 0
-                        ? "Get ready"
-                        : "In play"}
-                    </h3>
-                  </div>
-                  {hostControls && (
-                    <button
-                      className="wide"
-                      onClick={() => action({ type: "lobby" })}
-                    >
-                      Edit table
-                    </button>
-                  )}
-                </>
-              )}
-              <div className="rules">
-                <span className="section-label">How to play</span>
-                {game.rules.map((rule) => (
-                  <p key={rule}>{rule}</p>
-                ))}
-              </div>
-              {remote && (
-                <div className="invite-summary">
-                  <span className="section-label">Invite a teammate</span>
-                  <p className="note">
-                    They choose Play, enter this invitation code and select Join
-                    game.
-                  </p>
-                  <input
-                    className="invite-code"
-                    aria-label="Room code"
-                    readOnly
-                    value={code}
-                    onFocus={(e) => e.target.select()}
-                  />
-                  <p className="note">
-                    Add a Game Player if you want a robot at the table too.
-                  </p>
+                  </>
+                )}
+                <div className="rules">
+                  <span className="section-label">How to play</span>
+                  {game.rules.map((rule) => (
+                    <p key={rule}>{rule}</p>
+                  ))}
                 </div>
-              )}
-              {remote && (
-                <details>
-                  <summary>Room details</summary>
-                  <p className="note">
-                    Invite teammates to PureGames → Play → this room. Access
-                    follows the folder.
-                  </p>
-                  <code>{roomPath}</code>
-                </details>
-              )}
-            </aside>
+                {remote && (
+                  <div className="invite-summary">
+                    <span className="section-label">Invite a teammate</span>
+                    <p className="note">
+                      They choose Play, enter this invitation code and select
+                      Join game.
+                    </p>
+                    <input
+                      className="invite-code"
+                      aria-label="Room code"
+                      readOnly
+                      value={code}
+                      onFocus={(e) => e.target.select()}
+                    />
+                    <p className="note">
+                      Add a Game Player if you want a robot at the table too.
+                    </p>
+                  </div>
+                )}
+                {remote && (
+                  <details>
+                    <summary>Room details</summary>
+                    <p className="note">
+                      Invite teammates to PureGames → Play → this room. Access
+                      follows the folder.
+                    </p>
+                    <code>{roomPath}</code>
+                  </details>
+                )}
+              </aside>
+            )}
           </div>
           <div className="game-statusbar">
             <span>

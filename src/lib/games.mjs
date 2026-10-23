@@ -1,4 +1,18 @@
 export const GAMES = {
+  letters: {
+    name: "Letterlight",
+    subtitle: "Solo word discovery",
+    genre: "Solo · Words · Discovery",
+    tagline: "A little room for words.",
+    description:
+      "Follow the letters. Uncover six words hidden around a theme, and gather bonus discoveries along the way. Just you, a fresh board, and one more word.",
+    arenas: { open: "Unhurried", islands: "Three minutes" },
+    goal: "6 theme words · Bonus discoveries · Just you",
+    rules: [
+      "Trace neighbouring letters, including diagonals, without reusing a tile. Release a traced path to submit, or type a word and press Enter. Find all six theme words to finish.",
+      "Words earn 10 points per letter, with 20 extra for a theme word and 100 for completing the board. Three hints reveal starting letters and tiles, reducing that word’s score by 15. Bonus words use a curated list. Play unhurried or against a three-minute clock.",
+    ],
+  },
   tether: {
     name: "Tether Crew",
     subtitle: "Cooperative physics playground",

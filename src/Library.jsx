@@ -1,3 +1,4 @@
+import { LetterPreview } from "./LetterArena.jsx";
 import { TetherPreview } from "./TetherArena.jsx";
 import { NoirPreview } from "./NoirScene.jsx";
 import React from "react";
@@ -150,7 +151,8 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const tether = room.game === "tether",
+  const letters = room.game === "letters",
+    tether = room.game === "tether",
     noir = room.game === "noir",
     coop = ["words", "noir", "tether"].includes(room.game),
     orbit = room.game === "orbit",
@@ -160,7 +162,9 @@ export function Library({
   const islands = room.arena === "islands";
   return (
     <section
-      className={`games-library ${noir ? "noir-library" : ""}`}
+      className={`games-library ${
+        letters ? "letters-library" : noir ? "noir-library" : ""
+      }`}
       aria-label="Game library"
     >
       <nav className="library-rail" aria-label="Games">
@@ -168,113 +172,132 @@ export function Library({
           Library{" "}
           <span>{String(Object.keys(GAMES).length).padStart(2, "0")}</span>
         </div>
-        {["tether", "noir", "words", "shoot", "orbit", "ribbon"].map((game) => (
-          <button
-            key={game}
-            className={`library-game ${room.game === game ? "selected" : ""}`}
-            aria-current={room.game === game ? "page" : undefined}
-            disabled={!!remote && room.game !== game}
-            onClick={() => onSelect(game)}
-          >
-            <span className={`library-game-icon ${game}`}>
-              {game === "tether" ? (
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <rect
-                    x="5"
-                    y="8"
-                    width="13"
-                    height="12"
-                    rx="5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M18 14c14 0-9 18 5 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <rect
-                    x="23"
-                    y="22"
-                    width="12"
-                    height="12"
-                    rx="2"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              ) : game === "noir" ? (
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <path
-                    d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="m7 8 3 3m23-3-3 3"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              ) : game === "words" ? (
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <rect
-                    x="5"
-                    y="7"
-                    width="21"
-                    height="26"
-                    rx="3"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M11 15h9M11 21h9M11 27h5M29 14h6v20H17"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              ) : game === "shoot" ? (
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
-                  <path
-                    d="m27 3 1 4M33 10l4 1M9 27l-4 5M14 30l-3 5"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                </svg>
-              ) : game === "orbit" ? (
-                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                  <circle
-                    cx="20"
-                    cy="20"
-                    r="7"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <ellipse
-                    cx="20"
-                    cy="20"
-                    rx="17"
-                    ry="8"
-                    transform="rotate(-35 20 20)"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                  />
-                  <circle cx="33" cy="11" r="3" fill="currentColor" />
-                </svg>
-              ) : (
-                <RibbonMark />
-              )}
-            </span>
-            <span>
-              <strong>
-                {GAMES[game].name}
-                {game === "tether" && <em className="library-new">NEW</em>}
-              </strong>
-              <small>{GAMES[game].subtitle}</small>
-            </span>
-          </button>
-        ))}
+        {["letters", "tether", "noir", "words", "shoot", "orbit", "ribbon"].map(
+          (game) => (
+            <button
+              key={game}
+              className={`library-game ${room.game === game ? "selected" : ""}`}
+              aria-current={room.game === game ? "page" : undefined}
+              disabled={!!remote && room.game !== game}
+              onClick={() => onSelect(game)}
+            >
+              <span className={`library-game-icon ${game}`}>
+                {game === "letters" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <rect
+                      x="6"
+                      y="6"
+                      width="28"
+                      height="28"
+                      rx="6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="m12 28 8-16 8 16M15 22h10"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                ) : game === "tether" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <rect
+                      x="5"
+                      y="8"
+                      width="13"
+                      height="12"
+                      rx="5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M18 14c14 0-9 18 5 18"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <rect
+                      x="23"
+                      y="22"
+                      width="12"
+                      height="12"
+                      rx="2"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                ) : game === "noir" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <path
+                      d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="m7 8 3 3m23-3-3 3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                ) : game === "words" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <rect
+                      x="5"
+                      y="7"
+                      width="21"
+                      height="26"
+                      rx="3"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <path
+                      d="M11 15h9M11 21h9M11 27h5M29 14h6v20H17"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                ) : game === "shoot" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
+                    <path
+                      d="m27 3 1 4M33 10l4 1M9 27l-4 5M14 30l-3 5"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                ) : game === "orbit" ? (
+                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="7"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    />
+                    <ellipse
+                      cx="20"
+                      cy="20"
+                      rx="17"
+                      ry="8"
+                      transform="rotate(-35 20 20)"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    <circle cx="33" cy="11" r="3" fill="currentColor" />
+                  </svg>
+                ) : (
+                  <RibbonMark />
+                )}
+              </span>
+              <span>
+                <strong>
+                  {GAMES[game].name}
+                  {game === "letters" && <em className="library-new">NEW</em>}
+                </strong>
+                <small>{GAMES[game].subtitle}</small>
+              </span>
+            </button>
+          )
+        )}
         <div className="library-connection">
           <i />
           {server ? "Team play available" : "Offline play available"}
@@ -288,19 +311,31 @@ export function Library({
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
-                {coop ? "Live co-op" : "Live multiplayer"}
+                {letters
+                  ? "Solo word game"
+                  : coop
+                  ? "Live co-op"
+                  : "Live multiplayer"}
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                {coop ? "Play with agent" : "Play against agent"}
+                {letters
+                  ? "Offline ready"
+                  : coop
+                  ? "Play with agent"
+                  : "Play against agent"}
               </span>
             </div>
           </div>
-          <span className="library-player-count">2–4 players</span>
+          <span className="library-player-count">
+            {letters ? "1 player" : "2–4 players"}
+          </span>
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {tether ? (
+            {letters ? (
+              <LetterPreview />
+            ) : tether ? (
               <TetherPreview />
             ) : noir ? (
               <NoirPreview />
@@ -316,7 +351,9 @@ export function Library({
             <div className="preview-caption">
               <span>
                 <i />{" "}
-                {tether
+                {letters
+                  ? "Eight original themed boards"
+                  : tether
                   ? "Aurelia salvage yard"
                   : noir
                   ? "Blackwater after dark"
@@ -334,19 +371,27 @@ export function Library({
             </div>
             <div className="library-setting">
               <span className="library-section-label">
-                {coop ? "Mode" : "Arena"}
+                {coop || letters ? "Mode" : "Arena"}
               </span>
               <div className="library-arena-options">
                 {["open", "islands"].map((arena) => (
                   <button
                     key={arena}
                     aria-pressed={room.arena === arena}
-                    disabled={remote || room.phase !== "lobby"}
+                    disabled={
+                      remote ||
+                      (room.phase !== "lobby" &&
+                        !(letters && room.phase === "finished"))
+                    }
                     onClick={() => onArena(arena)}
                   >
                     <span
                       className={`arena-mini ${
-                        coop
+                        letters
+                          ? arena === "open"
+                            ? "word-relaxed"
+                            : "word-timed"
+                          : coop
                           ? arena === "open"
                             ? "word-timed"
                             : "word-relaxed"
@@ -371,28 +416,37 @@ export function Library({
                 ))}
               </div>
             </div>
-            <div className="library-setting">
-              <span className="library-section-label">At the table</span>
-              <div className="library-seats">
-                <span className="seat-avatar human">You</span>
-                <span className="seat-connector">+</span>
-                <span className="seat-avatar robot">
-                  <RibbonMark />
-                </span>
-                <span className="seat-caption">
-                  Game Players{server && <small>and your teammates</small>}
-                </span>
+            {letters ? (
+              <div className="letter-solo-note">
+                Your own pace. Your own discoveries.
+                <br />
+                No team or connection needed. Play opens your puzzle
+                immediately.
               </div>
-              <p className="library-note">
-                {remote
-                  ? "Your shared table is still open. Return to see the players."
-                  : server
-                  ? "Play with teammates, Game Player agents, or both in the same live match."
-                  : coop
-                  ? "Play with a Game Player offline. Connect to PureServer to play with your teammates."
-                  : "Play against a Game Player agent offline. Connect to PureServer for live team multiplayer."}
-              </p>
-            </div>
+            ) : (
+              <div className="library-setting">
+                <span className="library-section-label">At the table</span>
+                <div className="library-seats">
+                  <span className="seat-avatar human">You</span>
+                  <span className="seat-connector">+</span>
+                  <span className="seat-avatar robot">
+                    <RibbonMark />
+                  </span>
+                  <span className="seat-caption">
+                    Game Players{server && <small>and your teammates</small>}
+                  </span>
+                </div>
+                <p className="library-note">
+                  {remote
+                    ? "Your shared table is still open. Return to see the players."
+                    : server
+                    ? "Play with teammates, Game Player agents, or both in the same live match."
+                    : coop
+                    ? "Play with a Game Player offline. Connect to PureServer to play with your teammates."
+                    : "Play against a Game Player agent offline. Connect to PureServer for live team multiplayer."}
+                </p>
+              </div>
+            )}
             <div className="library-launch">
               <button className="library-play" onClick={onPlay}>
                 <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -400,9 +454,11 @@ export function Library({
                 </svg>
                 {remote || room.phase === "playing" ? "Return to game" : "Play"}
               </button>
-              <button className="library-table" onClick={onOpen}>
-                Table & players <span>→</span>
-              </button>
+              {!letters && (
+                <button className="library-table" onClick={onOpen}>
+                  Table & players <span>→</span>
+                </button>
+              )}
             </div>
           </aside>
         </div>
@@ -416,7 +472,7 @@ export function Library({
             <span>
               <kbd>↑ ← ↓ →</kbd> Walk <kbd>E</kbd> Investigate
             </span>
-          ) : words ? (
+          ) : words || letters ? (
             <span>
               <kbd>A–Z</kbd> Type or tap letters
             </span>
@@ -430,7 +486,7 @@ export function Library({
               <kbd>→</kbd> Steer
             </span>
           )}
-          {words ? (
+          {words || letters ? (
             <span>
               <kbd>Enter</kbd> Add word
             </span>

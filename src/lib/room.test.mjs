@@ -158,3 +158,44 @@ test("Tether Crew shares human hooks and brakes, rejects bot spoofing and pauses
   s = cmd(s, "b", { type: "hook" });
   assert.equal(s.board.players[1].hook, null);
 });
+
+test("Letterlight starts immediately with one human, stays solo, and advances to a fresh board", async () => {
+  const { LETTER_PUZZLES } = await import("./letter-puzzles.mjs");
+  let s = createRoom("Solo", a, "letters");
+  assert.equal(cmd(s, "b", { type: "join" }), s);
+  assert.equal(cmd(s, "a", { type: "bot" }), s);
+  assert.equal(cmd(s, "b", { type: "start" }), s);
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.phase, "playing");
+  assert.equal(s.board.players.length, 1);
+  assert.equal(s.countdown, 0);
+  const first = LETTER_PUZZLES[0].words[0][0];
+  s = cmd(s, "a", { type: "pause" });
+  assert.equal(advance(s), s);
+  assert.equal(cmd(s, "a", { type: "word", guess: first }), s);
+  s = cmd(s, "a", { type: "resume" });
+  assert.equal(s.countdown, 0);
+  assert.equal(cmd(s, "b", { type: "word", guess: first }), s);
+  for (const [guess] of LETTER_PUZZLES[0].words)
+    s = cmd(s, "a", { type: "word", guess });
+  assert.equal(s.phase, "finished");
+  assert.equal(s.scores.a, 1);
+  s = cmd(s, "a", { type: "rematch" });
+  assert.equal(s.board.puzzle, 1);
+  assert.equal(s.board.players[0].score, 0);
+  assert.equal(s.board.hints, 3);
+  assert.equal(s.scores.a, 1);
+});
+
+test("solo game selection cannot evict a multiplayer table or launch with multiple seats", () => {
+  let s = createRoom("Team", a);
+  s = cmd(s, "b", { type: "join" });
+  assert.equal(cmd(s, "a", { type: "game", game: "letters" }), s);
+  const invalid = { ...s, game: "letters" };
+  assert.equal(cmd(invalid, "a", { type: "start" }), invalid);
+  let solo = createRoom("Solo", a, "letters");
+  solo = cmd(solo, "a", { type: "game", game: "ribbon" });
+  assert.equal(cmd(solo, "a", { type: "start" }), solo);
+  solo = cmd(solo, "a", { type: "bot" });
+  assert.equal(cmd(solo, "a", { type: "start" }).phase, "playing");
+});
