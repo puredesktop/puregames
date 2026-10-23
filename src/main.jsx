@@ -1,3 +1,6 @@
+import "./tether.css";
+import { TetherArena } from "./TetherArena.jsx";
+import { newTether } from "./lib/tether.mjs";
 import "./noir.css";
 import { NoirArena } from "./NoirArena.jsx";
 import { newNoir } from "./lib/noir.mjs";
@@ -21,7 +24,7 @@ import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
   command(
-    createRoom("Local table", me, "noir"),
+    createRoom("Local table", me, "tether"),
     "local",
     { type: "bot" },
     "local",
@@ -52,8 +55,9 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
-  const noir = s.game === "noir",
-    coop = ["noir", "words"].includes(s.game),
+  const tether = s.game === "tether",
+    noir = s.game === "noir",
+    coop = ["noir", "words", "tether"].includes(s.game),
     orbit = s.game === "orbit",
     shoot = s.game === "shoot",
     words = s.game === "words",
@@ -261,9 +265,9 @@ function App() {
     s.seats.length >= 2 && s.seats.every((p) => p.bot || peers.has(p.id));
   return (
     <div
-      className={`game-viewport software ${noir ? "noir-mode" : ""} ${
-        fullscreen ? "is-fullscreen" : ""
-      }`}
+      className={`game-viewport software ${
+        tether ? "tether-mode" : noir ? "noir-mode" : ""
+      } ${fullscreen ? "is-fullscreen" : ""}`}
       ref={surface}
     >
       <div className="game-toolbar">
@@ -354,10 +358,36 @@ function App() {
           <div className="match">
             <div
               className={`play-surface ${
-                noir ? "noir-surface" : words ? "word-surface" : ""
+                tether
+                  ? "tether-surface"
+                  : noir
+                  ? "noir-surface"
+                  : words
+                  ? "word-surface"
+                  : ""
               }`}
             >
-              {noir ? (
+              {tether ? (
+                <TetherArena
+                  board={
+                    s.board?.kind === "tether"
+                      ? s.board
+                      : newTether(
+                          Math.max(2, s.seats.length),
+                          s.arena,
+                          s.round + 1
+                        )
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  lobby={s.phase === "lobby"}
+                  id={id}
+                  remote={!!remote}
+                  onAction={action}
+                  onSteer={steer}
+                  onPause={togglePause}
+                />
+              ) : noir ? (
                 <NoirArena
                   board={
                     s.board?.kind === "noir"
@@ -481,7 +511,12 @@ function App() {
                 )}
               </div>
               <div className="control-strip">
-                {noir ? (
+                {tether ? (
+                  <span>
+                    <kbd>↑ ← ↓ →</kbd> Move <kbd>Space</kbd> Hook / release{" "}
+                    <kbd>Shift</kbd> Brake
+                  </span>
+                ) : noir ? (
                   <span>
                     <kbd>↑ ← ↓ →</kbd> Walk <kbd>Shift</kbd> Run <kbd>E</kbd>{" "}
                     Interact
@@ -517,7 +552,8 @@ function App() {
                 ) : (
                   !noir && (
                     <span>
-                      <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
+                      <kbd>{shoot || tether ? "P" : "Space"}</kbd> Pause /
+                      resume
                     </span>
                   )
                 )}
@@ -645,6 +681,8 @@ function App() {
                       ? hostControls
                         ? "Start when everyone has a seat."
                         : "The coordinator starts the round."
+                      : tether
+                      ? "Arrows or WASD move. Space hooks. Shift brakes. Player 2 uses WASD, F to hook, X to brake."
                       : noir
                       ? "Move with arrows or WASD. Shift runs. E searches or speaks. Player 2 uses WASD and F."
                       : words

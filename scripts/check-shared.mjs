@@ -351,6 +351,75 @@ try {
   );
   assert.deepEqual(states[a.name].state, states[b.name].state);
   assert.ok(states[b.name].state.board.teamScore >= 10);
+  leader.action({ type: "lobby" });
+  await wait(() => states[a.name].state.phase === "lobby", "salvage lobby");
+  leader.action({ type: "game", game: "tether" });
+  await wait(
+    () => states[b.name].state.game === "tether",
+    "shared salvage selection"
+  );
+  leader.action({ type: "start" });
+  await wait(
+    () => states[b.name].state.board?.kind === "tether",
+    "salvage starts"
+  );
+  let towing = false;
+  const guide = setInterval(() => {
+    [ca, cb].forEach((client, i) => {
+      const p = states[a.name].state.board.players[i];
+      const x = ((towing ? 80 : 340) - p.x) * 0.06 - p.vx * 0.7;
+      const y = (360 + i * 24 - p.y) * 0.06 - p.vy * 0.7;
+      const d = Math.max(1, Math.hypot(x, y));
+      client.steer({ x: x / d, y: y / d });
+    });
+  }, 70);
+  try {
+    await wait(
+      () =>
+        states[b.name].state.board.players
+          .slice(0, 2)
+          .every((p) => Math.hypot(p.x - 340, p.y - 372) < 30),
+      "human tug movement"
+    );
+    ca.action({ type: "hook" });
+    cb.action({ type: "hook" });
+    await wait(
+      () =>
+        states[b.name].state.board.players
+          .slice(0, 2)
+          .every((p) => p.hook === 0),
+      "both human cables replicate"
+    );
+    towing = true;
+    await wait(
+      () => states[b.name].state.board.delivered >= 1,
+      "physical shared delivery",
+      25000
+    );
+  } finally {
+    clearInterval(guide);
+  }
+  ca.steer({ brake: true });
+  cb.steer({ brake: true });
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "salvage pauses"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
+  const haul = states[b.name].state.board;
+  assert.equal(
+    haul.teamScore,
+    haul.players.reduce((n, p) => n + p.score, 0)
+  );
+  assert.ok(
+    haul.players[0].score > 0 && haul.players[1].score > 0,
+    "both teammates earn shared lift credit"
+  );
+  assert.ok(
+    haul.players[2].x !== 300,
+    "Game Player flies alongside the humans"
+  );
   leader.action({ type: "resume" });
   await wait(() => !states[a.name].state.paused, "resume before migration");
   leader.close();
@@ -363,7 +432,7 @@ try {
     );
   }, "host migration pauses");
   console.log(
-    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, Word Loom concurrent answers/shared hints/agent help, The Ninth Bell walking/first-person turns/shared evidence, live scores for all games, host migration."
+    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, Word Loom concurrent answers/shared hints/agent help, The Ninth Bell walking/first-person turns/shared evidence, Tether Crew shared cables/physics/delivery/team credit, live scores for all games, host migration."
   );
 } finally {
   for (const c of connections) c.close();

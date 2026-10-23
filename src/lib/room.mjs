@@ -1,9 +1,11 @@
+import { newTether, stepTether, tetherCommand } from "./tether.mjs";
 import { newNoir, stepNoir, noirCommand } from "./noir.mjs";
 import { newWords, stepWords, wordCommand } from "./words.mjs";
 import { newSkirmish, stepSkirmish, skirmishBot } from "./skirmish.mjs";
 import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
 const engines = {
+  tether: { create: newTether, step: stepTether, bot: () => ({ bot: true }) },
   noir: { create: newNoir, step: stepNoir, bot: () => ({ bot: true }) },
   words: { create: newWords, step: stepWords, bot: () => ({ bot: true }) },
   ribbon: { create: newRace, step, bot: steer },
@@ -95,7 +97,7 @@ export function command(s, actor, action, host, present) {
       phase: "playing",
       round: s.round + 1,
       paused: false,
-      countdown: ["words", "noir"].includes(s.game) ? 0 : 30,
+      countdown: ["words", "noir", "tether"].includes(s.game) ? 0 : 30,
       board: engines[s.game].create(s.seats.length, s.arena, s.round + 1),
     };
   } else if (action.type === "pause" && seat >= 0 && s.phase === "playing") {
@@ -109,19 +111,26 @@ export function command(s, actor, action, host, present) {
     next = {
       ...s,
       paused: false,
-      countdown: ["words", "noir"].includes(s.game) ? 0 : 30,
+      countdown: ["words", "noir", "tether"].includes(s.game) ? 0 : 30,
     };
   } else if (
-    ["words", "noir"].includes(s.game) &&
+    ["words", "noir", "tether"].includes(s.game) &&
     seat >= 0 &&
     present.has(actor) &&
     s.phase === "playing" &&
     !s.paused &&
     !s.countdown &&
-    (s.game === "noir" ? ["interact"] : ["word", "hint"]).includes(action.type)
+    (s.game === "tether"
+      ? ["hook"]
+      : s.game === "noir"
+      ? ["interact"]
+      : ["word", "hint"]
+    ).includes(action.type)
   ) {
     const board =
-      s.game === "noir"
+      s.game === "tether"
+        ? tetherCommand(s.board, seat, action)
+        : s.game === "noir"
         ? noirCommand(s.board, seat, action, s.seats)
         : wordCommand(s.board, seat, action);
     if (board !== s.board) next = finishBoard(s, board);
@@ -139,12 +148,13 @@ export function advance(s, inputs = {}) {
     if (s.board.players[i].alive)
       turns[i] = p.bot
         ? engines[s.game].bot(s.board, i)
-        : ["words", "noir"].includes(s.game) && inputs[p.id]
+        : ["words", "noir", "tether"].includes(s.game) && inputs[p.id]
         ? {
             focus: inputs[p.id].focus,
             x: inputs[p.id].x,
             y: inputs[p.id].y,
             run: inputs[p.id].run,
+            brake: inputs[p.id].brake,
             view: inputs[p.id].view,
             turn: inputs[p.id].turn,
             forward: inputs[p.id].forward,

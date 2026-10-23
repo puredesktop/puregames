@@ -134,3 +134,27 @@ test("The Ninth Bell shares movement and perspective inputs, pauses, and retains
   assert.equal(advance(s, { a: { x: 1 } }), s);
   assert.equal(cmd(s, "b", { type: "interact" }), s);
 });
+
+test("Tether Crew shares human hooks and brakes, rejects bot spoofing and pauses commands", () => {
+  let s = createRoom("Salvage", a, "tether");
+  s = cmd(s, "b", { type: "join" });
+  s = cmd(s, "a", { type: "bot" });
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.board.kind, "tether");
+  assert.equal(s.countdown, 0);
+  const x = s.board.players[0].x;
+  s = advance(s, { a: { x: 1, bot: true }, b: { x: 1, brake: true } });
+  assert.ok(s.board.players[0].x > x);
+  assert.equal(s.board.players[0].hook, null);
+  assert.equal(s.board.players[1].braking, true);
+  s.board.players[1].x = 340;
+  s.board.players[1].y = 360;
+  s = cmd(s, "b", { type: "hook" });
+  assert.equal(s.board.players[1].hook, 0);
+  s = cmd(s, "a", { type: "pause" });
+  assert.equal(cmd(s, "b", { type: "hook" }), s);
+  assert.equal(advance(s), s);
+  s = cmd(s, "a", { type: "resume" });
+  s = cmd(s, "b", { type: "hook" });
+  assert.equal(s.board.players[1].hook, null);
+});

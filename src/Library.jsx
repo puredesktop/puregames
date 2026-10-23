@@ -1,3 +1,4 @@
+import { TetherPreview } from "./TetherArena.jsx";
 import { NoirPreview } from "./NoirScene.jsx";
 import React from "react";
 import { WordPreview } from "./WordArena.jsx";
@@ -149,8 +150,9 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const noir = room.game === "noir",
-    coop = ["words", "noir"].includes(room.game),
+  const tether = room.game === "tether",
+    noir = room.game === "noir",
+    coop = ["words", "noir", "tether"].includes(room.game),
     orbit = room.game === "orbit",
     shoot = room.game === "shoot",
     words = room.game === "words",
@@ -163,9 +165,10 @@ export function Library({
     >
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library <span>05</span>
+          Library{" "}
+          <span>{String(Object.keys(GAMES).length).padStart(2, "0")}</span>
         </div>
-        {["noir", "words", "shoot", "orbit", "ribbon"].map((game) => (
+        {["tether", "noir", "words", "shoot", "orbit", "ribbon"].map((game) => (
           <button
             key={game}
             className={`library-game ${room.game === game ? "selected" : ""}`}
@@ -174,7 +177,33 @@ export function Library({
             onClick={() => onSelect(game)}
           >
             <span className={`library-game-icon ${game}`}>
-              {game === "noir" ? (
+              {game === "tether" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect
+                    x="5"
+                    y="8"
+                    width="13"
+                    height="12"
+                    rx="5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M18 14c14 0-9 18 5 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="23"
+                    y="22"
+                    width="12"
+                    height="12"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "noir" ? (
                 <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <path
                     d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
@@ -240,7 +269,7 @@ export function Library({
             <span>
               <strong>
                 {GAMES[game].name}
-                {game === "noir" && <em className="library-new">NEW</em>}
+                {game === "tether" && <em className="library-new">NEW</em>}
               </strong>
               <small>{GAMES[game].subtitle}</small>
             </span>
@@ -271,7 +300,9 @@ export function Library({
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {noir ? (
+            {tether ? (
+              <TetherPreview />
+            ) : noir ? (
               <NoirPreview />
             ) : words ? (
               <WordPreview />
@@ -285,7 +316,9 @@ export function Library({
             <div className="preview-caption">
               <span>
                 <i />{" "}
-                {noir
+                {tether
+                  ? "Aurelia salvage yard"
+                  : noir
                   ? "Blackwater after dark"
                   : words
                   ? "Puzzle preview"
@@ -356,7 +389,7 @@ export function Library({
                   : server
                   ? "Play with teammates, Game Player agents, or both in the same live match."
                   : coop
-                  ? "Play with a Game Player offline. Connect to PureServer to solve with your teammates."
+                  ? "Play with a Game Player offline. Connect to PureServer to play with your teammates."
                   : "Play against a Game Player agent offline. Connect to PureServer for live team multiplayer."}
               </p>
             </div>
@@ -374,7 +407,12 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
-          {noir ? (
+          {tether ? (
+            <span>
+              <kbd>↑ ← ↓ →</kbd> Move <kbd>Space</kbd> Hook <kbd>Shift</kbd>{" "}
+              Brake
+            </span>
+          ) : noir ? (
             <span>
               <kbd>↑ ← ↓ →</kbd> Walk <kbd>E</kbd> Investigate
             </span>
@@ -399,7 +437,7 @@ export function Library({
           ) : (
             !noir && (
               <span>
-                <kbd>{shoot ? "P" : "Space"}</kbd> Pause
+                <kbd>{shoot || tether ? "P" : "Space"}</kbd> Pause
               </span>
             )
           )}

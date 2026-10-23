@@ -1,4 +1,18 @@
 export const GAMES = {
+  tether: {
+    name: "Tether Crew",
+    subtitle: "Cooperative physics playground",
+    genre: "Cooperative · Physics · Salvage",
+    tagline: "Good things come to those who tow.",
+    description:
+      "Small tugs. Oversized cargo. Hook up, find your rhythm, and bring five lost treasures home. Every beautiful landing belongs to the whole crew.",
+    arenas: { open: "Four-minute shift", islands: "Easy drift" },
+    goal: "5 deliveries · One happy crew",
+    rules: [
+      "Arrows or WASD move your tug. Space hooks the nearest cargo within reach, or releases your cable. Pull cargo into the green recovery ring on the left. Hold Shift to brake; P pauses. A second local player uses WASD, F to hook, and X to brake.",
+      "Recover five loads together. Two cables make heavy cargo easier to move and earn +25 for a shared lift. Gentle landings preserve cargo value. Deliveries within 30 seconds build a chain bonus. Avoid drifting debris and watch for magnetic tides. Easy drift has no time limit.",
+    ],
+  },
   noir: {
     name: "The Ninth Bell",
     subtitle: "Live noir pursuit",
