@@ -1,6 +1,6 @@
 # PureGames
 
-Standalone private PureDesktop app. Five original games share one native app: **The Ninth Bell**, a real-time noir investigation; **Word Loom**, a cooperative word puzzle; **Star Skirmish**, a 2–4-player space shootout; **Orbit Rally**, a cosmic score chase; and **Ribbon Run**, a trail arena. Play locally with a Game Player or a second person on the keyboard, or connect PureDesktop to PureServer to mix teammates and Game Players in the same live match. Grow a Garden has been retired.
+Free, open-source games for [PureDesktop](https://puredesktop.ai), published under the [MIT licence](LICENSE). Five original games share one native app: **The Ninth Bell**, a real-time noir investigation; **Word Loom**, a cooperative word puzzle; **Star Skirmish**, a 2–4-player space shootout; **Orbit Rally**, a cosmic score chase; and **Ribbon Run**, a trail arena. Play locally with a Game Player or a second person on the keyboard, or connect PureDesktop to PureServer to mix teammates and Game Players in the same live match. Grow a Garden has been retired.
 
 ## Play
 
@@ -31,3 +31,16 @@ Place this repo at `apps/puregames` within a ps-suite checkout so the platform S
 `node scripts/check-shared.mjs /path/to/pure-server [/path/to/ps-suite/packages/shell/src/modules/collab/remote.ts]` tests two authenticated clients, automatic seats, a mixed human/bot match, steering, dash, laser fire, knockout, banked and survival score replication, concurrent word submissions, shared hints, cooperative agent help, live noir movement and first-person turns, shared evidence, shared pause and coordinator migration against a temporary server database/workspace. With the optional shell module it runs one client through the native transport adapter and checks ticket ownership and path rejection. The combined test process can warn about two Yjs installations; production bundles have one.
 
 App code and visual assets are original. Existing platform dependencies retain their own licences. No branded game names, artwork or external game code are bundled.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome at
+[puredesktop/puregames](https://github.com/puredesktop/puregames). Fork the
+repository to contribute; updates and merges to the protected main branch are
+reserved for administrators. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Licence
+
+Original code and visual assets are copyright (c) 2026 pure.science inc and
+licensed under the [MIT License](LICENSE). Dependencies retain their own
+copyright notices and licences; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
