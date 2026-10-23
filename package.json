@@ -1,0 +1,25 @@
+{
+  "name": "@purescience/puregames",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 7196",
+    "build": "vite build",
+    "test": "node --test src/lib/*.test.mjs"
+  },
+  "dependencies": {
+    "@purescience/platform-bridge": "file:../../packages/bridge",
+    "@purescience/platform-ui": "file:../../packages/ui",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "styled-components": "^6.1.18"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

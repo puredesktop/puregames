@@ -1,0 +1,23 @@
+{
+  "id": "games",
+  "name": "PureGames",
+  "permissions": [],
+  "entrypoint": {
+    "kind": "built-static",
+    "dir": "dist"
+  },
+  "app": {
+    "id": "games",
+    "slug": "games",
+    "name": "PureGames",
+    "navigationLabel": "Games",
+    "productName": "puregames",
+    "kind": "games",
+    "description": "Original small games for people and Game Player companions.",
+    "brand": {
+      "letter": "g",
+      "label": "Games",
+      "color": "#697c54"
+    }
+  }
+}
