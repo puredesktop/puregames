@@ -1,3 +1,22 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {start,legal,play,choose,points} from './garden.mjs';
-test('opening and adjacency are enforced',()=>{const s=start();assert.deepEqual(legal(s),[12]);assert.throws(()=>play(s,0,'sun'));const n=play(s,12,'sun');assert.equal(s.board[12],null);assert.deepEqual(legal(n),[7,11,13,17]);assert.throws(()=>play(n,12,'fern'))});
-test('agent completes a legal bounded match',()=>{let s=start();while(s.moves<20){const a=choose(s);s=play(s,a.i,a.p)}assert.equal(choose(s),null);assert.equal(legal(s).length,0);assert.ok(points(s.board)>0)});
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { start, legal, play, choose, points } from "./garden.mjs";
+test("opening and adjacency are enforced", () => {
+  const s = start();
+  assert.deepEqual(legal(s), [12]);
+  assert.throws(() => play(s, 0, "sun"));
+  const n = play(s, 12, "sun");
+  assert.equal(s.board[12], null);
+  assert.deepEqual(legal(n), [7, 11, 13, 17]);
+  assert.throws(() => play(n, 12, "fern"));
+});
+test("agent completes a legal bounded match", () => {
+  let s = start();
+  while (s.moves < 20) {
+    const a = choose(s);
+    s = play(s, a.i, a.p);
+  }
+  assert.equal(choose(s), null);
+  assert.equal(legal(s).length, 0);
+  assert.ok(points(s.board) > 0);
+});

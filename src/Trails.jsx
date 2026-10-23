@@ -1,2 +1,163 @@
-import React,{useState,useEffect,useRef}from'react';import{newRace,step,steer,SIZE}from'./lib/trails.mjs';
-export function Trails({back}){const[s,S]=useState(newRace),[running,R]=useState(false),[mode,M]=useState('agent');const input=useRef({}),canvas=useRef(null);useEffect(()=>{const c=canvas.current,ctx=c.getContext('2d'),unit=c.width/SIZE;ctx.fillStyle='#f0eee5';ctx.fillRect(0,0,c.width,c.height);for(const p of s.trail){ctx.fillStyle=p.owner?'#ad664a':'#386f77';ctx.fillRect(p.x*unit+1,p.y*unit+1,unit-2,unit-2)}s.players.forEach((p,i)=>{if(!p.alive)return;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc((p.x+.5)*unit,(p.y+.5)*unit,unit*.27,0,Math.PI*2);ctx.fill()})},[s]);useEffect(()=>{if(!running||s.done)return;const timer=setTimeout(()=>{S(v=>step(v,{...input.current,...(mode==='agent'?{1:steer(v,1)}:{})}));input.current={}},100);return()=>clearTimeout(timer)},[s,running,mode]);const turn=(id,d)=>{if(input.current[id]===undefined)input.current[id]=d};return <main><nav><button onClick={back}>← Play room</button><button onClick={()=>{S(newRace());R(false);input.current={}}}>New round</button><button disabled={running&&!s.done} onClick={()=>{M(mode==='agent'?'local':'agent');S(newRace());R(false)}}>{mode==='agent'?'You + Game Player':'Two people · same keyboard'}</button></nav><span className="eyebrow">REAL-TIME / 02</span><h1>Ribbon Run</h1><p>Keep moving, leave a ribbon, find open space. Avoid the borders and every ribbon—including your own. Last moving marker wins; simultaneous crashes are a draw.</p><div className="race" tabIndex={0} role="group" aria-label="Ribbon Run arena. Arrow keys steer teal; W A S D steer rust in two-person mode." onBlur={()=>R(false)} onKeyDown={e=>{const keys={ArrowUp:[0,0],ArrowRight:[0,1],ArrowDown:[0,2],ArrowLeft:[0,3],w:[1,0],d:[1,1],s:[1,2],a:[1,3]};if(keys[e.key]){e.preventDefault();const[id,d]=keys[e.key];if(id===0||mode==='local')turn(id,d)}}}><canvas ref={canvas} width={648} height={648} aria-label="Trail arena"/><aside><h3 aria-live="polite">{s.done?s.players[0].alive?'Teal wins':s.players[1].alive?'Rust wins':'A simultaneous finish':running?'Find your next opening':'Ready when you are'}</h3><p>Teal: arrow keys<br/>Rust: {mode==='agent'?'Game Player':'W A S D'}<br/>{(s.tick/10).toFixed(1)} seconds</p><button className="primary" disabled={s.done} onClick={e=>{R(!running);e.currentTarget.closest('.race').focus()}}>{running?'Pause':'Start / resume'}</button><p className="note">Click the arena to steer. Leaving the arena pauses local play. PureServer multiplayer is not connected in this preview.</p><div className="plants">{['↑','→','↓','←'].map((v,d)=><button key={d} aria-label={`Steer ${['up','right','down','left'][d]}`} onClick={e=>{turn(0,d);e.currentTarget.closest('.race').focus()}}>{v}</button>)}</div></aside></div></main>}
+import React, { useState, useEffect, useRef } from "react";
+import { newRace, step, steer, SIZE } from "./lib/trails.mjs";
+export function Trails({ back }) {
+  const [s, S] = useState(newRace),
+    [running, R] = useState(false),
+    [mode, M] = useState("agent");
+  const input = useRef({}),
+    canvas = useRef(null);
+  useEffect(() => {
+    const c = canvas.current,
+      ctx = c.getContext("2d"),
+      unit = c.width / SIZE;
+    ctx.fillStyle = "#f0eee5";
+    ctx.fillRect(0, 0, c.width, c.height);
+    for (const p of s.trail) {
+      ctx.fillStyle = p.owner ? "#ad664a" : "#386f77";
+      ctx.fillRect(p.x * unit + 1, p.y * unit + 1, unit - 2, unit - 2);
+    }
+    s.players.forEach((p, i) => {
+      if (!p.alive) return;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(
+        (p.x + 0.5) * unit,
+        (p.y + 0.5) * unit,
+        unit * 0.27,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    });
+  }, [s]);
+  useEffect(() => {
+    if (!running || s.done) return;
+    const timer = setTimeout(() => {
+      S((v) =>
+        step(v, {
+          ...input.current,
+          ...(mode === "agent" ? { 1: steer(v, 1) } : {}),
+        })
+      );
+      input.current = {};
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [s, running, mode]);
+  const turn = (id, d) => {
+    if (input.current[id] === undefined) input.current[id] = d;
+  };
+  return (
+    <main>
+      <nav>
+        <button onClick={back}>← Play room</button>
+        <button
+          onClick={() => {
+            S(newRace());
+            R(false);
+            input.current = {};
+          }}
+        >
+          New round
+        </button>
+        <button
+          disabled={running && !s.done}
+          onClick={() => {
+            M(mode === "agent" ? "local" : "agent");
+            S(newRace());
+            R(false);
+          }}
+        >
+          {mode === "agent"
+            ? "You + Game Player"
+            : "Two people · same keyboard"}
+        </button>
+      </nav>
+      <span className="eyebrow">REAL-TIME / 02</span>
+      <h1>Ribbon Run</h1>
+      <p>
+        Keep moving, leave a ribbon, find open space. Avoid the borders and
+        every ribbon—including your own. Last moving marker wins; simultaneous
+        crashes are a draw.
+      </p>
+      <div
+        className="race"
+        tabIndex={0}
+        role="group"
+        aria-label="Ribbon Run arena. Arrow keys steer teal; W A S D steer rust in two-person mode."
+        onBlur={() => R(false)}
+        onKeyDown={(e) => {
+          const keys = {
+            ArrowUp: [0, 0],
+            ArrowRight: [0, 1],
+            ArrowDown: [0, 2],
+            ArrowLeft: [0, 3],
+            w: [1, 0],
+            d: [1, 1],
+            s: [1, 2],
+            a: [1, 3],
+          };
+          if (keys[e.key]) {
+            e.preventDefault();
+            const [id, d] = keys[e.key];
+            if (id === 0 || mode === "local") turn(id, d);
+          }
+        }}
+      >
+        <canvas
+          ref={canvas}
+          width={648}
+          height={648}
+          aria-label="Trail arena"
+        />
+        <aside>
+          <h3 aria-live="polite">
+            {s.done
+              ? s.players[0].alive
+                ? "Teal wins"
+                : s.players[1].alive
+                ? "Rust wins"
+                : "A simultaneous finish"
+              : running
+              ? "Find your next opening"
+              : "Ready when you are"}
+          </h3>
+          <p>
+            Teal: arrow keys
+            <br />
+            Rust: {mode === "agent" ? "Game Player" : "W A S D"}
+            <br />
+            {(s.tick / 10).toFixed(1)} seconds
+          </p>
+          <button
+            className="primary"
+            disabled={s.done}
+            onClick={(e) => {
+              R(!running);
+              e.currentTarget.closest(".race").focus();
+            }}
+          >
+            {running ? "Pause" : "Start / resume"}
+          </button>
+          <p className="note">
+            Click the arena to steer. Leaving the arena pauses local play.
+            PureServer multiplayer is not connected in this preview.
+          </p>
+          <div className="plants">
+            {["↑", "→", "↓", "←"].map((v, d) => (
+              <button
+                key={d}
+                aria-label={`Steer ${["up", "right", "down", "left"][d]}`}
+                onClick={(e) => {
+                  turn(0, d);
+                  e.currentTarget.closest(".race").focus();
+                }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}
