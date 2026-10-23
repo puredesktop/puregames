@@ -1,7 +1,9 @@
+import { newWords, stepWords, wordCommand } from "./words.mjs";
 import { newSkirmish, stepSkirmish, skirmishBot } from "./skirmish.mjs";
 import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
 const engines = {
+  words: { create: newWords, step: stepWords, bot: () => ({ bot: true }) },
   ribbon: { create: newRace, step, bot: steer },
   orbit: { create: newOrbit, step: stepOrbit, bot: orbitBot },
   shoot: { create: newSkirmish, step: stepSkirmish, bot: skirmishBot },
@@ -91,8 +93,8 @@ export function command(s, actor, action, host, present) {
       phase: "playing",
       round: s.round + 1,
       paused: false,
-      countdown: 30,
-      board: engines[s.game].create(s.seats.length, s.arena),
+      countdown: s.game === "words" ? 0 : 30,
+      board: engines[s.game].create(s.seats.length, s.arena, s.round + 1),
     };
   } else if (action.type === "pause" && seat >= 0 && s.phase === "playing") {
     next = { ...s, paused: true };
@@ -102,7 +104,18 @@ export function command(s, actor, action, host, present) {
     s.phase === "playing" &&
     s.seats.every((p) => p.bot || present.has(p.id))
   ) {
-    next = { ...s, paused: false, countdown: 30 };
+    next = { ...s, paused: false, countdown: s.game === "words" ? 0 : 30 };
+  } else if (
+    s.game === "words" &&
+    seat >= 0 &&
+    present.has(actor) &&
+    s.phase === "playing" &&
+    !s.paused &&
+    !s.countdown &&
+    ["word", "hint"].includes(action.type)
+  ) {
+    const board = wordCommand(s.board, seat, action);
+    if (board !== s.board) next = finishBoard(s, board);
   } else if (action.type === "lobby" && admin) {
     next = { ...s, phase: "lobby", paused: true, board: null };
   }
@@ -115,23 +128,25 @@ export function advance(s, inputs = {}) {
   const turns = {};
   s.seats.forEach((p, i) => {
     if (s.board.players[i].alive)
-      turns[i] = p.bot ? engines[s.game].bot(s.board, i) : inputs[p.id];
+      turns[i] = p.bot
+        ? engines[s.game].bot(s.board, i)
+        : s.game === "words" && inputs[p.id]
+        ? { focus: inputs[p.id].focus, bot: false }
+        : inputs[p.id];
   });
   const board = engines[s.game].step(s.board, turns);
+  return { ...finishBoard(s, board), revision: s.revision + 1 };
+}
+function finishBoard(s, board) {
   const scores = { ...s.scores };
-  if (board.done)
+  if (board.done && !s.board?.done)
     board.players.forEach((p, i) => {
       if (s.game !== "ribbon" ? board.winners.includes(i) : p.alive)
         scores[s.seats[i].id] = (scores[s.seats[i].id] || 0) + 1;
     });
-  return {
-    ...s,
-    board,
-    scores,
-    phase: board.done ? "finished" : "playing",
-    revision: s.revision + 1,
-  };
+  return { ...s, board, scores, phase: board.done ? "finished" : "playing" };
 }
+
 export function pauseForDisconnect(s, present) {
   return s.phase === "playing" &&
     !s.paused &&

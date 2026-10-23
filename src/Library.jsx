@@ -1,4 +1,5 @@
 import React from "react";
+import { WordPreview } from "./WordArena.jsx";
 import { GAMES } from "./lib/games.mjs";
 import { SkirmishPreview } from "./SkirmishArena.jsx";
 import { OrbitPreview } from "./OrbitArena.jsx";
@@ -149,15 +150,16 @@ export function Library({
 }) {
   const orbit = room.game === "orbit",
     shoot = room.game === "shoot",
+    words = room.game === "words",
     info = GAMES[room.game];
   const islands = room.arena === "islands";
   return (
     <section className="games-library" aria-label="Game library">
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library <span>03</span>
+          Library <span>04</span>
         </div>
-        {["shoot", "orbit", "ribbon"].map((game) => (
+        {["words", "shoot", "orbit", "ribbon"].map((game) => (
           <button
             key={game}
             className={`library-game ${room.game === game ? "selected" : ""}`}
@@ -166,7 +168,24 @@ export function Library({
             onClick={() => onSelect(game)}
           >
             <span className={`library-game-icon ${game}`}>
-              {game === "shoot" ? (
+              {game === "words" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect
+                    x="5"
+                    y="7"
+                    width="21"
+                    height="26"
+                    rx="3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M11 15h9M11 21h9M11 27h5M29 14h6v20H17"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "shoot" ? (
                 <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
                   <path
@@ -202,7 +221,7 @@ export function Library({
             <span>
               <strong>
                 {GAMES[game].name}
-                {game === "shoot" && <em className="library-new">NEW</em>}
+                {game === "words" && <em className="library-new">NEW</em>}
               </strong>
               <small>{GAMES[game].subtitle}</small>
             </span>
@@ -221,11 +240,11 @@ export function Library({
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
-                Live multiplayer
+                {words ? "Live co-op" : "Live multiplayer"}
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                Play against agent
+                {words ? "Play with agent" : "Play against agent"}
               </span>
             </div>
           </div>
@@ -233,7 +252,9 @@ export function Library({
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {shoot ? (
+            {words ? (
+              <WordPreview />
+            ) : shoot ? (
               <SkirmishPreview arena={room.arena} />
             ) : orbit ? (
               <OrbitPreview />
@@ -242,7 +263,7 @@ export function Library({
             )}
             <div className="preview-caption">
               <span>
-                <i /> Arena preview
+                <i /> {words ? "Puzzle preview" : "Arena preview"}
               </span>
               <span>{info.arenas[room.arena]}</span>
             </div>
@@ -253,7 +274,9 @@ export function Library({
               <p>{info.description}</p>
             </div>
             <div className="library-setting">
-              <span className="library-section-label">Arena</span>
+              <span className="library-section-label">
+                {words ? "Mode" : "Arena"}
+              </span>
               <div className="library-arena-options">
                 {["open", "islands"].map((arena) => (
                   <button
@@ -264,7 +287,11 @@ export function Library({
                   >
                     <span
                       className={`arena-mini ${
-                        shoot
+                        words
+                          ? arena === "open"
+                            ? "word-timed"
+                            : "word-relaxed"
+                          : shoot
                           ? arena === "open"
                             ? "deep-space"
                             : "asteroids"
@@ -302,6 +329,8 @@ export function Library({
                   ? "Your shared table is still open. Return to see the players."
                   : server
                   ? "Play with teammates, Game Player agents, or both in the same live match."
+                  : words
+                  ? "Play with a Game Player offline. Connect to PureServer to solve with your teammates."
                   : "Play against a Game Player agent offline. Connect to PureServer for live team multiplayer."}
               </p>
             </div>
@@ -319,7 +348,11 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
-          {room.game !== "ribbon" ? (
+          {words ? (
+            <span>
+              <kbd>A–Z</kbd> Type or tap letters
+            </span>
+          ) : room.game !== "ribbon" ? (
             <FlightKeys />
           ) : (
             <span>
@@ -329,9 +362,15 @@ export function Library({
               <kbd>→</kbd> Steer
             </span>
           )}
-          <span>
-            <kbd>{shoot ? "P" : "Space"}</kbd> Pause
-          </span>
+          {words ? (
+            <span>
+              <kbd>Enter</kbd> Add word
+            </span>
+          ) : (
+            <span>
+              <kbd>{shoot ? "P" : "Space"}</kbd> Pause
+            </span>
+          )}
           {shoot && (
             <span>
               <kbd>Space</kbd> Hold to fire

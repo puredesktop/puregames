@@ -10,13 +10,15 @@ import { OrbitArena } from "./OrbitArena.jsx";
 import { newOrbit } from "./lib/orbit.mjs";
 import { SkirmishArena } from "./SkirmishArena.jsx";
 import { newSkirmish } from "./lib/skirmish.mjs";
+import { WordArena } from "./WordArena.jsx";
+import { newWords } from "./lib/words.mjs";
 import { GAMES } from "./lib/games.mjs";
 import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
   command(
-    createRoom("Local table", me, "shoot"),
+    createRoom("Local table", me, "words"),
     "local",
     { type: "bot" },
     "local",
@@ -49,6 +51,7 @@ function App() {
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
   const orbit = s.game === "orbit",
     shoot = s.game === "shoot",
+    words = s.game === "words",
     game = GAMES[s.game],
     gameName = game.name;
   const connected = !remote || remote.connected,
@@ -89,13 +92,13 @@ function App() {
       : op === "write"
       ? bridge.call("fs.write", [path, content])
       : bridge.call("collab.join", [{ path }]);
-  const action = (a) =>
+  const action = (a, actor = "local") =>
     remote
       ? connection.current?.action(a)
       : setLocal((v) =>
           command(
             v,
-            "local",
+            actor,
             { ...a, revision: v.revision },
             "local",
             new Map(v.seats.filter((p) => !p.bot).map((p) => [p.id, p]))
@@ -116,7 +119,9 @@ function App() {
     }
   };
   const focusArena = () =>
-    surface.current?.querySelector(".arena-wrap")?.focus();
+    surface.current
+      ?.querySelector(words ? ".word-entry" : ".arena-wrap")
+      ?.focus();
   const togglePause = () => {
     if (s.phase === "playing") {
       action({ type: s.paused ? "resume" : "pause" });
@@ -340,8 +345,32 @@ function App() {
       ) : (
         <>
           <div className="match">
-            <div className="play-surface">
-              {shoot ? (
+            <div className={`play-surface ${words ? "word-surface" : ""}`}>
+              {words ? (
+                <WordArena
+                  board={
+                    s.board?.kind === "words"
+                      ? s.board
+                      : newWords(
+                          Math.max(2, s.seats.length),
+                          s.arena,
+                          s.round + 1
+                        )
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  lobby={s.phase === "lobby"}
+                  id={id}
+                  remote={!!remote}
+                  onAction={action}
+                  onFocus={(focus, actor) => {
+                    const index = localRef.current.seats
+                      .filter((p) => !p.bot)
+                      .findIndex((p) => p.id === actor);
+                    steer({ focus }, remote ? 0 : index);
+                  }}
+                />
+              ) : shoot ? (
                 <SkirmishArena
                   board={
                     s.board?.kind === "shoot"
@@ -421,7 +450,11 @@ function App() {
                 )}
               </div>
               <div className="control-strip">
-                {s.game !== "ribbon" ? (
+                {words ? (
+                  <span>
+                    <kbd>A–Z</kbd> Type or tap letters
+                  </span>
+                ) : s.game !== "ribbon" ? (
                   <FlightKeys />
                 ) : (
                   <span>
@@ -441,9 +474,15 @@ function App() {
                     <kbd>Shift</kbd> Dash
                   </span>
                 )}
-                <span>
-                  <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
-                </span>
+                {words ? (
+                  <span>
+                    <kbd>Enter</kbd> Add word
+                  </span>
+                ) : (
+                  <span>
+                    <kbd>{shoot ? "P" : "Space"}</kbd> Pause / resume
+                  </span>
+                )}
                 <span>
                   <kbd>Esc</kbd> Exit full screen
                 </span>
@@ -451,7 +490,9 @@ function App() {
             </div>
             <aside className="players-panel">
               <div className="section-heading">
-                <span className="section-label">Live scores</span>
+                <span className="section-label">
+                  {words ? "Team contributions" : "Live scores"}
+                </span>
                 <span>{s.seats.length} / 4</span>
               </div>
               <ol className="players">
@@ -474,7 +515,7 @@ function App() {
                           : peers.has(p.id)
                           ? "Ready"
                           : "Disconnected"}{" "}
-                        · {s.scores?.[p.id] || 0} wins
+                        · {s.scores?.[p.id] || 0} {words ? "completed" : "wins"}
                       </small>
                       {shoot && s.board?.kind === "shoot" && (
                         <small>
@@ -545,7 +586,9 @@ function App() {
                     )}
                   </div>
                   <div className="setting-section">
-                    <span className="section-label">Arena</span>
+                    <span className="section-label">
+                      {words ? "Mode" : "Arena"}
+                    </span>
                     <div className="choice-row">
                       {["open", "islands"].map((arena) => (
                         <button
@@ -564,6 +607,8 @@ function App() {
                       ? hostControls
                         ? "Start when everyone has a seat."
                         : "The coordinator starts the round."
+                      : words
+                      ? "Type or tap the rack. All players work toward the same score."
                       : s.seats.filter((p) => !p.bot).length > 1
                       ? shoot
                         ? "Arrows: turn, thrust, brake. Space fires. Player 2: A/D turn, W thrust, S brake, F fires."
@@ -670,7 +715,7 @@ function App() {
               Game Player or invite people from your team.
             </p>
             <button className="primary" onClick={robot}>
-              Play against Game Player
+              {words ? "Play with Game Player" : "Play against Game Player"}
             </button>
             <button className="secondary" disabled={busy} onClick={inviteTeam}>
               {busy ? "Creating invitation…" : "Invite teammates"}

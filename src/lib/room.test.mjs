@@ -90,3 +90,30 @@ test("Star Skirmish shared rules launch, pause and award wins once", () => {
   assert.equal(s.board.players[0].score, 0);
   assert.equal(s.scores.a, 1);
 });
+
+test("Word Loom accepts either teammate, blocks paused answers and awards a shared win once", async () => {
+  const { WORD_PUZZLES } = await import("./word-puzzles.mjs");
+  let s = createRoom("Words", a, "words");
+  s = cmd(s, "b", { type: "join" });
+  s = cmd(s, "a", { type: "bot" });
+  s = cmd(s, "a", { type: "start" });
+  assert.equal(s.countdown, 0);
+  s = cmd(s, "a", { type: "pause" });
+  assert.equal(cmd(s, "b", { type: "word", clue: 0, guess: "STAR" }), s);
+  s = cmd(s, "a", { type: "resume" });
+  for (let i = 0; i < 8; i++)
+    s = cmd(s, i % 2 ? "b" : "a", {
+      type: "word",
+      clue: i,
+      guess: WORD_PUZZLES[0].words[i][0],
+    });
+  assert.equal(s.phase, "finished");
+  assert.equal(s.scores.a, 1);
+  assert.equal(s.scores.b, 1);
+  assert.equal(s.scores[s.seats[2].id], 1);
+  assert.equal(advance(s), s);
+  s = cmd(s, "a", { type: "rematch" });
+  assert.equal(s.board.puzzle, 1);
+  assert.equal(s.scores.a, 1);
+  assert.equal(s.board.teamScore, 0);
+});

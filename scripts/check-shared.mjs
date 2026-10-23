@@ -256,6 +256,67 @@ try {
     "shootout pause"
   );
   assert.deepEqual(states[a.name].state, states[b.name].state);
+  leader.action({ type: "lobby" });
+  await wait(() => states[a.name].state.phase === "lobby", "word lobby");
+  leader.action({ type: "game", game: "words" });
+  await wait(
+    () =>
+      states[a.name].state.game === "words" &&
+      states[b.name].state.game === "words",
+    "shared word puzzle"
+  );
+  leader.action({ type: "start" });
+  await wait(
+    () =>
+      states[b.name].state.board?.kind === "words" &&
+      states[a.name].state.phase === "playing",
+    "word round starts"
+  );
+  ca.steer({ focus: 2 });
+  cb.steer({ focus: 3 });
+  await wait(
+    () =>
+      states[b.name].state.board.players[0].focus === 2 &&
+      states[a.name].state.board.players[1].focus === 3,
+    "teammate clue focus"
+  );
+  ca.action({ type: "word", clue: 0, guess: "STAR" });
+  cb.action({ type: "word", clue: 0, guess: "STAR" });
+  await wait(
+    () =>
+      states[a.name].state.board.entries[0].by !== null &&
+      states[b.name].state.board.entries[0].by !== null,
+    "concurrent answer"
+  );
+  assert.equal(
+    states[b.name].state.board.teamScore,
+    18,
+    "concurrent answer scores once"
+  );
+  cb.action({ type: "hint", clue: 1 });
+  await wait(() => states[a.name].state.board.hints === 2, "shared hint");
+  ca.action({ type: "word", clue: 1, guess: "LIGHT" });
+  await wait(
+    () => states[b.name].state.board.entries[1].by === 0,
+    "native answer replicated"
+  );
+  cb.action({ type: "word", clue: 2, guess: "TRAIL" });
+  await wait(
+    () => states[a.name].state.board.entries[2].by === 1,
+    "browser answer replicated"
+  );
+  assert.equal(states[a.name].state.board.teamScore, 56);
+  await wait(
+    () => states[b.name].state.board.entries.some((e) => e.by === 2),
+    "Game Player helps shared puzzle",
+    25000
+  );
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "word pause"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
   leader.action({ type: "resume" });
   await wait(() => !states[a.name].state.paused, "resume before migration");
   leader.close();
@@ -268,7 +329,7 @@ try {
     );
   }, "host migration pauses");
   console.log(
-    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, live scores for all games, host migration."
+    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, Star Skirmish shared launch/fire/knockouts, Word Loom concurrent answers/shared hints/agent help, live scores for all games, host migration."
   );
 } finally {
   for (const c of connections) c.close();

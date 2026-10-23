@@ -1,4 +1,18 @@
 export const GAMES = {
+  words: {
+    name: "Word Loom",
+    subtitle: "Cooperative word puzzle",
+    genre: "Cooperative · Words",
+    tagline: "Eight clues. One shared discovery.",
+    description:
+      "Make words from one rack of letters. Solve clues together, share hints, and weave a perfect board.",
+    arenas: { open: "Three-minute round", islands: "Relaxed" },
+    goal: "8 clues · One team score",
+    rules: [
+      "Solve eight clues using the shared letter rack. Type an answer or tap letters, then press Enter. Each tile can be used once per answer.",
+      "Every solved clue adds to the team score. Three shared hints reveal letters, costing 2 points each. Game Player helps every 20 seconds and leaves occupied clues for people.",
+    ],
+  },
   shoot: {
     name: "Star Skirmish",
     subtitle: "Space shootout",
