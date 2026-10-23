@@ -6,12 +6,14 @@ import { createRoom, command, advance } from "./lib/room.mjs";
 import { newRace } from "./lib/trails.mjs";
 import { connectRoom } from "./lib/shared.mjs";
 import { Arena, colours } from "./Arena.jsx";
+import { OrbitArena } from "./OrbitArena.jsx";
+import { newOrbit } from "./lib/orbit.mjs";
 import { Library } from "./Library.jsx";
 import "./style.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = () =>
   command(
-    createRoom("Local table", me),
+    createRoom("Local table", me, "orbit"),
     "local",
     { type: "bot" },
     "local",
@@ -42,6 +44,8 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
+  const orbit = s.game === "orbit",
+    gameName = orbit ? "Orbit Rally" : "Ribbon Run";
   const connected = !remote || remote.connected,
     hostControls = !remote || id === host;
   useEffect(() => {
@@ -98,7 +102,11 @@ function App() {
     } else {
       const humans = localRef.current.seats.filter((p) => !p.bot);
       const who = humans[index];
-      if (who && directions.current[who.id] === undefined)
+      if (
+        who &&
+        (localRef.current.game === "orbit" ||
+          directions.current[who.id] === undefined)
+      )
         directions.current[who.id] = direction;
     }
   };
@@ -159,13 +167,19 @@ function App() {
         await request(
           "write",
           path,
-          JSON.stringify({ format: "puregames-room", version: 1, name: title })
+          JSON.stringify({
+            format: "puregames-room",
+            version: 1,
+            name: title,
+            game: s.game,
+          })
         );
       const saved = JSON.parse(await request("read", path));
       if (saved.format !== "puregames-room" || saved.version !== 1)
         throw Error("This is not a supported PureGames room.");
       // Retired games return to a Ribbon Run lobby when an older room is reopened.
-      if (saved.state?.game !== "ribbon") delete saved.state;
+      if (saved.state && !["ribbon", "orbit"].includes(saved.state.game))
+        delete saved.state;
       const session = await request("join", path);
       if (!session?.url)
         throw Error("This host does not support a PureServer live connection.");
@@ -249,9 +263,7 @@ function App() {
               ‹ Games
             </button>
           )}
-          <strong>
-            {screen === "library" ? "Game library" : "Ribbon Run"}
-          </strong>
+          <strong>{screen === "library" ? "Game library" : gameName}</strong>
           {screen !== "library" && (
             <span>{remote ? s.name : "Local table"}</span>
           )}
@@ -297,6 +309,19 @@ function App() {
           server={server}
           remote={remote}
           onOpen={() => setScreen("table")}
+          onSelect={(game) => {
+            if (!remote)
+              setLocal((v) => ({
+                ...v,
+                game,
+                phase: "lobby",
+                board: null,
+                paused: true,
+                countdown: 0,
+                scores: {},
+                round: 0,
+              }));
+          }}
           onArena={(arena) => action({ type: "arena", arena })}
           onPlay={() => {
             setScreen("table");
@@ -311,19 +336,38 @@ function App() {
         <>
           <div className="match">
             <div className="play-surface">
-              <Arena
-                board={
-                  s.board?.players
-                    ? s.board
-                    : newRace(Math.max(2, s.seats.length), s.arena)
-                }
-                seats={s.seats}
-                paused={s.paused}
-                countdown={s.countdown || 0}
-                lobby={s.phase === "lobby"}
-                onSteer={steer}
-                onPause={togglePause}
-              />
+              {orbit ? (
+                <OrbitArena
+                  board={
+                    s.board?.kind === "orbit"
+                      ? s.board
+                      : newOrbit(Math.max(2, s.seats.length), s.arena)
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  countdown={s.countdown || 0}
+                  lobby={s.phase === "lobby"}
+                  onSteer={steer}
+                  onPause={togglePause}
+                  playerIndex={
+                    remote ? s.seats.findIndex((p) => p.id === id) : 0
+                  }
+                />
+              ) : (
+                <Arena
+                  board={
+                    s.board?.players
+                      ? s.board
+                      : newRace(Math.max(2, s.seats.length), s.arena)
+                  }
+                  seats={s.seats}
+                  paused={s.paused}
+                  countdown={s.countdown || 0}
+                  lobby={s.phase === "lobby"}
+                  onSteer={steer}
+                  onPause={togglePause}
+                />
+              )}
               <div className="arena-actions">
                 {s.phase === "playing" ? (
                   <button
@@ -361,6 +405,11 @@ function App() {
                   <kbd>↓</kbd>
                   <kbd>→</kbd> Steer
                 </span>
+                {orbit && (
+                  <span>
+                    <kbd>Shift</kbd> Dash
+                  </span>
+                )}
                 <span>
                   <kbd>Space</kbd> Pause / resume
                 </span>
@@ -371,7 +420,7 @@ function App() {
             </div>
             <aside className="players-panel">
               <div className="section-heading">
-                <span className="section-label">Players</span>
+                <span className="section-label">Live scores</span>
                 <span>{s.seats.length} / 4</span>
               </div>
               <ol className="players">
@@ -396,7 +445,22 @@ function App() {
                           : "Disconnected"}{" "}
                         · {s.scores?.[p.id] || 0} wins
                       </small>
+                      {orbit && s.board?.kind === "orbit" && (
+                        <small className="orbit-pilot-stat">
+                          {s.board.players[i]?.cargo || 0} / 7 cores carried
+                        </small>
+                      )}
                     </div>
+                    <span
+                      className="live-score"
+                      style={{ "--score-colour": colours[i] }}
+                    >
+                      <b>
+                        {s.board?.players?.[i]?.[orbit ? "score" : "points"] ||
+                          0}
+                      </b>
+                      <small>points</small>
+                    </span>
                     {s.phase === "lobby" && hostControls && p.id !== id && (
                       <button
                         className="icon-button"
@@ -451,7 +515,13 @@ function App() {
                           disabled={!hostControls}
                           onClick={() => action({ type: "arena", arena })}
                         >
-                          {arena === "open" ? "Open field" : "Four islands"}
+                          {orbit
+                            ? arena === "open"
+                              ? "Nebula"
+                              : "Solar storm"
+                            : arena === "open"
+                            ? "Open field"
+                            : "Four islands"}
                         </button>
                       ))}
                     </div>
@@ -493,10 +563,15 @@ function App() {
               <div className="rules">
                 <span className="section-label">How to play</span>
                 <p>
-                  Keep moving. Avoid every trail, island and border—including
-                  your own trail. The last marker moving wins.
+                  {orbit
+                    ? "Collect cyan cores and fly into a gold BANK gate. First to 20 points wins, or highest score after 90 seconds."
+                    : "Keep moving. Avoid every trail, island and border—including your own trail. The last marker moving wins."}
                 </p>
-                <p>A simultaneous crash is a draw. Wins carry across rounds.</p>
+                <p>
+                  {orbit
+                    ? "Bank 5 or more cores for +2 bonus points. Red hazards spill up to 3 cores. Shift dashes with a brief shield; recharge takes 4 seconds. Nobody is eliminated."
+                    : "Earn 1 point per step survived and 50 bonus points for winning. A simultaneous crash is a draw. Round wins carry across games."}
+                </p>
               </div>
               {remote && (
                 <div className="invite-summary">
@@ -532,7 +607,13 @@ function App() {
           <div className="game-statusbar">
             <span>
               {remote ? "Shared table" : "Local session"} ·{" "}
-              {s.arena === "islands" ? "Four islands" : "Open field"}
+              {orbit
+                ? s.arena === "islands"
+                  ? "Solar storm"
+                  : "Nebula"
+                : s.arena === "islands"
+                ? "Four islands"
+                : "Open field"}
             </span>
             <span>
               {remote

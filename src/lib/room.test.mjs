@@ -35,3 +35,5 @@ test("a disconnect pauses play; absent players block resume", () => {
   assert.equal(command(s, "a", { type: "resume" }, "a", present), s);
   assert.equal(advance(s), s);
 });
+
+test("Orbit Rally persists game choice, launches and awards only winning pilots",()=>{let s=createRoom('Orbit',a,'orbit');s=cmd(s,'a',{type:'bot'});assert.equal(cmd(s,'b',{type:'game',game:'ribbon'}),s);s=cmd(s,'a',{type:'start'});assert.equal(s.board.kind,'orbit');assert.equal(s.countdown,30);s={...s,countdown:0,board:{...s.board,tick:899,players:s.board.players.map((p,i)=>({...p,score:i===0?9:3}))}};s=advance(s);assert.equal(s.phase,'finished');assert.equal(s.scores.a,1);assert.equal(s.scores[s.seats[1].id],undefined)});

@@ -104,8 +104,8 @@ const connect = (p, key) =>
     onChange: (v) => (states[p.name] = v),
     WebSocketImpl: WebSocket,
   });
-const wait = async (fn, label) => {
-  const until = Date.now() + 8000;
+const wait = async (fn, label, timeout = 8000) => {
+  const until = Date.now() + timeout;
   while (Date.now() < until) {
     if (fn()) return;
     await new Promise((r) => setTimeout(r, 25));
@@ -165,10 +165,56 @@ try {
     "pause"
   );
   assert.deepEqual(states[a.name].state, states[b.name].state);
+  assert.ok(
+    states[b.name].state.board.players.every((p) => p.points > 0),
+    "live survival scores replicate"
+  );
   leader.action({ type: "lobby" });
   await wait(() => states[a.name].state.phase === "lobby", "lobby");
+  leader.action({ type: "game", game: "orbit" });
+  await wait(
+    () =>
+      states[a.name].state.game === "orbit" &&
+      states[b.name].state.game === "orbit",
+    "shared game choice"
+  );
   leader.action({ type: "start" });
-  await wait(() => states[a.name].state.phase === "playing", "restart");
+  await wait(
+    () =>
+      states[a.name].state.board?.kind === "orbit" &&
+      states[a.name].state.board.tick > 1,
+    "orbit launch"
+  );
+  ca.steer({ x: 0, y: -1, dash: true });
+  await wait(
+    () => states[b.name].state.board.players[0].cooldown > 0,
+    "native pilot dash replicated"
+  );
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "orbit shared pause"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
+  const bot = states[a.name].state.board.players[2];
+  assert.ok(Math.hypot(bot.vx, bot.vy) > 0, "agent flies in shared match");
+  leader.action({ type: "resume" });
+  await wait(() => !states[a.name].state.paused, "orbit resume");
+  await wait(
+    () =>
+      states[a.name].state.board.players[2].score > 0 &&
+      states[b.name].state.board.players[2].score > 0,
+    "banked scores reach both players",
+    25000
+  );
+  leader.action({ type: "pause" });
+  await wait(
+    () => states[a.name].state.paused && states[b.name].state.paused,
+    "pause to compare live scores"
+  );
+  assert.deepEqual(states[a.name].state, states[b.name].state);
+  leader.action({ type: "resume" });
+  await wait(() => !states[a.name].state.paused, "resume before migration");
   leader.close();
   await wait(() => {
     const remaining = leader === ca ? states[b.name] : states[a.name];
@@ -179,7 +225,7 @@ try {
     );
   }, "host migration pauses");
   console.log(
-    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, host migration."
+    "PASS: authenticated peers, mixed seats, realtime sync, human steering, pause, automatic seats, Orbit Rally shared selection/motion/dash, live scores for both games, host migration."
   );
 } finally {
   for (const c of connections) c.close();

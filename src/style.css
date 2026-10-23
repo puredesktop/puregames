@@ -1147,3 +1147,378 @@ code {
 .library-player-count {
   margin-top: 22px;
 }
+
+.library-game:not(.selected) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.library-game.selected {
+  background: #f8faf5;
+  border-color: #cbd7c9;
+  box-shadow: 0 2px 4px #233d2010;
+}
+.library-game:disabled {
+  opacity: 0.55;
+}
+.library-game-icon.orbit {
+  background: linear-gradient(145deg, #333660, #171c35);
+  color: #ffc9a6;
+}
+.library-new {
+  font-size: 8px;
+  margin-left: 5px;
+  color: #88764c;
+  letter-spacing: 0.5px;
+}
+.orbit-preview {
+  position: relative;
+  background: #080c22;
+  aspect-ratio: 1.5;
+  overflow: hidden;
+}
+.orbit-preview canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.orbit-preview-label {
+  position: absolute;
+  bottom: 15px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #a0abcf;
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+.orbit-preview-label span {
+  color: #92e2c5;
+  border: 1px solid #92e2c53a;
+  background: #142e2c88;
+  padding: 4px 7px;
+  border-radius: 3px;
+  font-size: 8px;
+}
+.orbit-arena {
+  aspect-ratio: 1.5;
+  border-color: #3e4666;
+  background: #080c22;
+  border-radius: 12px;
+  isolation: isolate;
+}
+.orbit-arena canvas {
+  object-fit: contain;
+}
+.orbit-topline {
+  position: absolute;
+  top: 16px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9px;
+  letter-spacing: 1.6px;
+  color: #9caacc;
+  pointer-events: none;
+}
+.orbit-topline strong {
+  color: #eef0ff;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.orbit-topline small {
+  font-size: 11px;
+  color: #7785a5;
+  margin-left: 3px;
+}
+.orbit-scoreboard {
+  position: absolute;
+  top: 53px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+  max-width: 90%;
+  pointer-events: none;
+}
+.orbit-scoreboard > div {
+  background: #11182de6;
+  border: 1px solid color-mix(in srgb, var(--pilot) 30%, transparent);
+  border-radius: 6px;
+  padding: 7px 12px;
+  min-width: 70px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--pilot);
+  box-shadow: 0 3px 12px #0002;
+}
+.orbit-scoreboard span {
+  font-size: 8px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.orbit-scoreboard b {
+  font-size: 17px;
+  font-weight: 500;
+}
+.orbit-scoreboard small {
+  font-size: 9px;
+  color: #7482a5;
+}
+.orbit-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: radial-gradient(ellipse, #0a1027df, transparent 75%);
+  padding: 30px;
+  pointer-events: none;
+}
+.orbit-kicker {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: #e9c599;
+}
+.orbit-overlay h2 {
+  font-size: clamp(26px, 4vw, 50px);
+  font-weight: 500;
+  color: #f0ebff;
+  letter-spacing: -1.5px;
+  line-height: 1.2;
+  margin: 18px 0;
+  text-shadow: 0 0 30px #ac8aff44;
+}
+.orbit-overlay p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #abb8d7;
+  max-width: 330px;
+  margin: 0;
+}
+.orbit-flightbar {
+  position: absolute;
+  bottom: 12px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #8494b5;
+  pointer-events: none;
+}
+.orbit-flightbar > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.orbit-flightbar b {
+  color: #f0d5a7;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  font-weight: 500;
+}
+.orbit-flightbar small {
+  font-size: 9px;
+  color: #8192b4;
+}
+.dash-meter {
+  position: relative;
+  width: 155px;
+  height: 26px;
+  border: 1px solid #7473bd55;
+  border-radius: 4px;
+  overflow: hidden;
+  justify-content: center;
+  background: #101831;
+}
+.dash-meter i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #6565aa40;
+  transition: width 0.1s linear;
+}
+.dash-meter b {
+  position: relative;
+  color: #bcb9f2;
+  font-size: 9px;
+  letter-spacing: 0.6px;
+}
+.orbit-pilot-stat {
+  color: #887242 !important;
+}
+.arena-mini.nebula {
+  background: #242c4b;
+  border-color: #4f5c81;
+  border-radius: 50%;
+}
+.arena-mini.nebula i {
+  width: 3px;
+  height: 3px;
+  background: #a5d9e6;
+  border-radius: 50%;
+}
+.arena-mini.storm {
+  background: #30263f;
+  border-color: #826087;
+  border-radius: 50%;
+}
+.arena-mini.storm i {
+  width: 5px;
+  height: 5px;
+  background: #d789a6;
+  transform: rotate(45deg);
+}
+@media (max-width: 800px) {
+  .orbit-scoreboard > div {
+    padding: 4px 7px;
+    min-width: 48px;
+  }
+  .orbit-scoreboard b {
+    font-size: 13px;
+  }
+  .orbit-topline {
+    top: 10px;
+    left: 12px;
+    right: 12px;
+  }
+  .orbit-scoreboard {
+    top: 42px;
+  }
+  .orbit-flightbar {
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+  }
+  .orbit-flightbar > span:last-child {
+    display: none;
+  }
+  .orbit-overlay h2 {
+    font-size: 28px;
+  }
+  .orbit-overlay p {
+    font-size: 11px;
+  }
+  .orbit-kicker {
+    font-size: 8px;
+    letter-spacing: 2px;
+  }
+  .orbit-overlay {
+    padding: 20px;
+  }
+}
+
+.live-score {
+  margin-left: auto;
+  text-align: right;
+  flex: none;
+  min-width: 38px;
+}
+.live-score b {
+  display: block;
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #365d4e;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+.live-score small {
+  font-size: 9px;
+  color: #7c8979;
+  margin: 1px 0 0;
+}
+.players li > div {
+  min-width: 0;
+}
+.players li > div > b {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.players li {
+  gap: 8px;
+}
+.ribbon-scoreboard {
+  position: absolute;
+  top: 48px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 7px;
+  max-width: 92%;
+  pointer-events: none;
+}
+.ribbon-scoreboard > div {
+  min-width: 63px;
+  max-width: 112px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--pilot) 25%, transparent);
+  background: #11262ce8;
+  border-radius: 6px;
+  color: var(--pilot);
+}
+.ribbon-scoreboard span {
+  font-size: 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ribbon-scoreboard b {
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ribbon-scoreboard small {
+  font-size: 9px;
+  color: #809b9d;
+}
+.ribbon-scoreboard em {
+  font-style: normal;
+  font-size: 7px;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+.orbit-scoreboard b {
+  font-size: 23px;
+  font-variant-numeric: tabular-nums;
+}
+.orbit-scoreboard span {
+  font-size: 10px;
+}
+@media (max-width: 800px) {
+  .ribbon-scoreboard > div {
+    min-width: 45px;
+    padding: 5px;
+  }
+  .ribbon-scoreboard b,
+  .orbit-scoreboard b {
+    font-size: 17px;
+  }
+  .ribbon-scoreboard span,
+  .orbit-scoreboard span {
+    font-size: 8px;
+  }
+  .live-score b {
+    font-size: 21px;
+  }
+}

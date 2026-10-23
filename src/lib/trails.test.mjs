@@ -24,3 +24,20 @@ test("agents finish without invalid states", () => {
   assert.ok(s.done);
   assert.ok(s.tick > 10);
 });
+
+test("live survival scores freeze on elimination and award a single winner bonus", () => {
+  const s = {
+    players: [
+      { x: 0, y: 0, d: 3, alive: true, points: 7 },
+      { x: 2, y: 2, d: 1, alive: true, points: 7 },
+    ],
+    trail: [],
+    tick: 7,
+    done: false,
+  };
+  const next = step(s);
+  assert.equal(next.players[0].points, 7);
+  assert.equal(next.players[1].points, 58);
+  assert.equal(next.done, true);
+  assert.equal(step(next), next);
+});

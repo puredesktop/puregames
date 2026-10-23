@@ -1,4 +1,5 @@
 import React from "react";
+import { OrbitPreview } from "./OrbitArena.jsx";
 
 function RibbonMark() {
   return (
@@ -119,27 +120,67 @@ function ArenaPreview({ islands }) {
     </svg>
   );
 }
-export function Library({ room, server, remote, onPlay, onOpen, onArena }) {
+export function Library({
+  room,
+  server,
+  remote,
+  onPlay,
+  onOpen,
+  onArena,
+  onSelect,
+}) {
+  const orbit = room.game === "orbit";
   const islands = room.arena === "islands";
   return (
     <section className="games-library" aria-label="Game library">
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library <span>01</span>
+          Library <span>02</span>
         </div>
-        <button
-          className="library-game selected"
-          aria-current="page"
-          onClick={onOpen}
-        >
-          <span className="library-game-icon">
-            <RibbonMark />
-          </span>
-          <span>
-            <strong>Ribbon Run</strong>
-            <small>Real-time arena</small>
-          </span>
-        </button>
+        {["orbit", "ribbon"].map((game) => (
+          <button
+            key={game}
+            className={`library-game ${room.game === game ? "selected" : ""}`}
+            aria-current={room.game === game ? "page" : undefined}
+            disabled={!!remote && room.game !== game}
+            onClick={() => onSelect(game)}
+          >
+            <span className={`library-game-icon ${game}`}>
+              {game === "orbit" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r="7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <ellipse
+                    cx="20"
+                    cy="20"
+                    rx="17"
+                    ry="8"
+                    transform="rotate(-35 20 20)"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <circle cx="33" cy="11" r="3" fill="currentColor" />
+                </svg>
+              ) : (
+                <RibbonMark />
+              )}
+            </span>
+            <span>
+              <strong>
+                {game === "orbit" ? "Orbit Rally" : "Ribbon Run"}
+                {game === "orbit" && <em className="library-new">NEW</em>}
+              </strong>
+              <small>
+                {game === "orbit" ? "Cosmic score chase" : "Trail survival"}
+              </small>
+            </span>
+          </button>
+        ))}
         <div className="library-connection">
           <i />
           {server ? "Team play available" : "Offline play available"}
@@ -148,8 +189,10 @@ export function Library({ room, server, remote, onPlay, onOpen, onArena }) {
       <main className="library-workspace">
         <header className="library-heading">
           <div>
-            <span className="library-section-label">Real-time · Survival</span>
-            <h1>Ribbon Run</h1>
+            <span className="library-section-label">
+              {orbit ? "Real-time · Score chase" : "Real-time · Survival"}
+            </span>
+            <h1>{orbit ? "Orbit Rally" : "Ribbon Run"}</h1>
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
@@ -165,20 +208,33 @@ export function Library({ room, server, remote, onPlay, onOpen, onArena }) {
         </header>
         <div className="library-content">
           <div className="library-preview">
-            <ArenaPreview islands={islands} />
+            {orbit ? <OrbitPreview /> : <ArenaPreview islands={islands} />}
             <div className="preview-caption">
               <span>
                 <i /> Arena preview
               </span>
-              <span>{islands ? "Four islands" : "Open field"}</span>
+              <span>
+                {orbit
+                  ? islands
+                    ? "Solar storm"
+                    : "Nebula"
+                  : islands
+                  ? "Four islands"
+                  : "Open field"}
+              </span>
             </div>
           </div>
           <aside className="library-inspector">
             <div className="library-description">
-              <h2>Make your next turn count.</h2>
+              <h2>
+                {orbit
+                  ? "Fortune favours the fast."
+                  : "Make your next turn count."}
+              </h2>
               <p>
-                Leave a trail. Cut off your rivals. Keep moving until you’re the
-                last one left.
+                {orbit
+                  ? "Scoop up starlight. Dash through danger. Bank your haul before a rival beats you to 20."
+                  : "Leave a trail. Cut off your rivals. Keep moving until you’re the last one left."}
               </p>
             </div>
             <div className="library-setting">
@@ -191,13 +247,23 @@ export function Library({ room, server, remote, onPlay, onOpen, onArena }) {
                     disabled={remote || room.phase !== "lobby"}
                     onClick={() => onArena(arena)}
                   >
-                    <span className={`arena-mini ${arena}`}>
+                    <span
+                      className={`arena-mini ${
+                        orbit ? (arena === "open" ? "nebula" : "storm") : arena
+                      }`}
+                    >
                       <i />
                       <i />
                       <i />
                       <i />
                     </span>
-                    {arena === "open" ? "Open field" : "Four islands"}
+                    {orbit
+                      ? arena === "open"
+                        ? "Nebula"
+                        : "Solar storm"
+                      : arena === "open"
+                      ? "Open field"
+                      : "Four islands"}
                   </button>
                 ))}
               </div>
@@ -245,7 +311,16 @@ export function Library({ room, server, remote, onPlay, onOpen, onArena }) {
           <span>
             <kbd>Space</kbd> Pause
           </span>
-          <span>Last marker moving wins</span>
+          {orbit && (
+            <span>
+              <kbd>Shift</kbd> Dash
+            </span>
+          )}
+          <span>
+            {orbit
+              ? "First to 20 · 90 second rounds"
+              : "Last marker moving wins"}
+          </span>
         </footer>
       </main>
     </section>

@@ -160,6 +160,18 @@ export function Arena({
           </b>
         </span>
       </div>
+      <div className="ribbon-scoreboard" aria-label="Live round scores">
+        {seats.map((seat, i) => (
+          <div key={seat.id} style={{ "--pilot": colours[i] }}>
+            <span>{seat.name}</span>
+            <b>
+              {board.players[i]?.points || 0}
+              <small> pts</small>
+            </b>
+            <em>{board.players[i]?.alive === false ? "OUT" : "IN PLAY"}</em>
+          </div>
+        ))}
+      </div>
       <div className="steering" aria-label="Direction controls">
         {["↑", "→", "↓", "←"].map((v, d) => (
           <button

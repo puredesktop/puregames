@@ -1,9 +1,10 @@
+import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
 export const CAPACITY = 4;
-export const createRoom = (name, owner) => ({
+export const createRoom = (name, owner, game = "ribbon") => ({
   version: 1,
   name: name.slice(0, 60),
-  game: "ribbon",
+  game: game === "orbit" ? "orbit" : "ribbon",
   phase: "lobby",
   revision: 0,
   round: 0,
@@ -59,6 +60,13 @@ export function command(s, actor, action, host, present) {
   ) {
     next = { ...s, seats: s.seats.filter((p) => p.id !== action.id) };
   } else if (
+    action.type === "game" &&
+    admin &&
+    s.phase === "lobby" &&
+    ["ribbon", "orbit"].includes(action.game)
+  ) {
+    next = { ...s, game: action.game, board: null, scores: {}, round: 0 };
+  } else if (
     action.type === "arena" &&
     admin &&
     s.phase === "lobby" &&
@@ -78,8 +86,10 @@ export function command(s, actor, action, host, present) {
       round: s.round + 1,
       paused: false,
       countdown: 30,
-      game: "ribbon",
-      board: newRace(s.seats.length, s.arena),
+      board:
+        s.game === "orbit"
+          ? newOrbit(s.seats.length, s.arena)
+          : newRace(s.seats.length, s.arena),
     };
   } else if (action.type === "pause" && seat >= 0 && s.phase === "playing") {
     next = { ...s, paused: true };
@@ -97,18 +107,24 @@ export function command(s, actor, action, host, present) {
 }
 export function advance(s, inputs = {}) {
   if (s.phase !== "playing" || s.paused) return s;
-  if (s.game === "ribbon" && s.countdown > 0)
+  if (s.countdown > 0)
     return { ...s, countdown: s.countdown - 1, revision: s.revision + 1 };
   const turns = {};
   s.seats.forEach((p, i) => {
     if (s.board.players[i].alive)
-      turns[i] = p.bot ? steer(s.board, i) : inputs[p.id];
+      turns[i] = p.bot
+        ? s.game === "orbit"
+          ? orbitBot(s.board, i)
+          : steer(s.board, i)
+        : inputs[p.id];
   });
-  const board = step(s.board, turns);
+  const board =
+    s.game === "orbit" ? stepOrbit(s.board, turns) : step(s.board, turns);
   const scores = { ...s.scores };
   if (board.done)
     board.players.forEach((p, i) => {
-      if (p.alive) scores[s.seats[i].id] = (scores[s.seats[i].id] || 0) + 1;
+      if (s.game === "orbit" ? board.winners.includes(i) : p.alive)
+        scores[s.seats[i].id] = (scores[s.seats[i].id] || 0) + 1;
     });
   return {
     ...s,

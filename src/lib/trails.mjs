@@ -13,7 +13,9 @@ export function newRace(count = 2, arena = "open") {
     { x: 30, y: 18, d: 3, alive: true },
     { x: 18, y: 5, d: 2, alive: true },
     { x: 18, y: 30, d: 0, alive: true },
-  ].slice(0, count);
+  ]
+    .slice(0, count)
+    .map((p) => ({ ...p, points: 0 }));
   return {
     players,
     trail: players.map((p, i) => ({ x: p.x, y: p.y, owner: i })),
@@ -62,6 +64,13 @@ export function step(s, inputs = {}) {
         (q, j) => j !== i && s.players[j].alive && q.x === p.x && q.y === p.y
       );
   });
+  const done = next.filter((p) => p.alive).length <= 1;
+  next.forEach((p, i) => {
+    p.points =
+      (s.players[i].points || 0) +
+      (p.alive ? 1 : 0) +
+      (done && p.alive ? 50 : 0);
+  });
   return {
     ...s,
     players: next,
@@ -72,7 +81,7 @@ export function step(s, inputs = {}) {
       ),
     ],
     tick: s.tick + 1,
-    done: next.filter((p) => p.alive).length <= 1,
+    done,
   };
 }
 export function steer(s, id) {

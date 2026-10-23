@@ -128,7 +128,7 @@ export function connectRoom({
                 "state",
                 saved?.state
                   ? { ...saved.state, paused: true }
-                  : createRoom(name, me)
+                  : createRoom(name, me, saved?.game)
               );
               doc
                 .getXmlFragment("prosemirror")
