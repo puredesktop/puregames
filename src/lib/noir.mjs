@@ -256,6 +256,16 @@ export function stepNoir(s, inputs = {}) {
       };
     }),
   };
+  // Rank only this tick's events; a new event may replace any older notice.
+  // Fragments > human interceptions > blank drops and agent escapes.
+  let noticePriority = 0;
+  const notify = (notice, priority) => {
+    if (priority >= noticePriority) {
+      next.notice = notice;
+      noticePriority = priority;
+    }
+    next.event++;
+  };
   const bots = Object.entries(inputs)
     .filter(([, v]) => v?.bot === true)
     .map(([i]) => +i);
@@ -336,8 +346,7 @@ export function stepNoir(s, inputs = {}) {
           if (!next.fragments.includes(drop.kind))
             next.fragments.push(drop.kind);
         } else if (s.arena === "open") next.tick = Math.max(0, next.tick - 150);
-        next.notice = clueText(next, drop.kind);
-        next.event++;
+        notify(clueText(next, drop.kind), drop.kind < 3 ? 3 : 1);
         p.search = null;
         p.progress = 0;
       }
@@ -364,10 +373,12 @@ export function stepNoir(s, inputs = {}) {
         search: null,
         progress: 0,
       };
-      next.notice = bot
-        ? "Game Player slipped away from the watch and is regrouping at the telephone."
-        : "The watch intercepted an investigator. Back at the telephone. Three interceptions burn the operation.";
-      next.event++;
+      notify(
+        bot
+          ? "Game Player slipped away from the watch and is regrouping at the telephone."
+          : "The watch intercepted an investigator. Back at the telephone. Three interceptions burn the operation.",
+        bot ? 1 : 2
+      );
     }
     next.players[i] = p;
   }

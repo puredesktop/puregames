@@ -8,6 +8,7 @@ import {
   inBeam,
   NOIR_LIMIT,
   objective,
+  clueText,
 } from "./noir.mjs";
 import {
   SAFE,
@@ -91,6 +92,75 @@ test("search requires proximity and standing still, duplicate searches score onc
   assert.equal(s.drops[0].by, 0);
   assert.equal(s.teamScore, 10);
   assert.equal(s.players[1].score, 0);
+});
+for (const [higher, lower] of [
+  ["fragment", "blank"],
+  ["fragment", "interception"],
+  ["fragment", "agent"],
+  ["interception", "blank"],
+  ["interception", "agent"],
+]) {
+  test(`same-tick ${higher} notice outranks ${lower} in either player order`, () => {
+    for (const events of [[higher, lower], [lower, higher]]) {
+      const s = game(),
+        inputs = {};
+      s.guards = [{
+        ...s.guards[0], x: 700, y: 740, angle: 0, alert: 0,
+      }];
+      events.forEach((event, i) => {
+        if (event === "fragment" || event === "blank") {
+          s.drops[i].kind = event === "fragment" ? 0 : 3;
+          s.players[i] = {
+            ...s.players[i], ...DROPS[i], search: i, progress: 21,
+          };
+        } else {
+          s.players[i] = {
+            ...s.players[i], x: 750, y: 740, heat: 99, grace: 0,
+          };
+          if (event === "agent") inputs[i] = { bot: true };
+        }
+      });
+      const next = stepNoir(s, inputs);
+      assert.equal(next.event, s.event + 2, "both events happened");
+      assert.equal(next.strikes, events.includes("interception") ? 1 : 0);
+      assert.equal(
+        next.teamScore,
+        events.filter((e) => ["fragment", "blank"].includes(e)).length * 10
+      );
+      if (higher === "fragment") {
+        assert.deepEqual(next.fragments, [0]);
+        assert.equal(next.notice, clueText(s, 0));
+      } else {
+        assert.match(next.notice, /^The watch intercepted an investigator\./);
+      }
+      assert.equal(
+        stepNoir(next, inputs).notice,
+        next.notice,
+        "notice persists on a quiet tick"
+      );
+    }
+  });
+}
+test("notice priority resets each tick and does not hide the end of the operation", () => {
+  let s = game();
+  s.guards = [];
+  s.drops[0].kind = 0;
+  s.drops[1].kind = 3;
+  s.players[0] = {
+    ...s.players[0], ...DROPS[0], search: 0, progress: 21,
+  };
+  const timed = { ...s, arena: "open", tick: NOIR_LIMIT - 1 };
+  s = stepNoir(s);
+  assert.equal(s.notice, clueText(s, 0));
+  s.players[1] = {
+    ...s.players[1], ...DROPS[1], search: 1, progress: 21,
+  };
+  s = stepNoir(s);
+  assert.equal(s.notice, clueText(s, 3), "a later tick can show a blank drop");
+  const ended = stepNoir(timed);
+  assert.deepEqual(ended.fragments, [0], "fragment recovered as dawn arrives");
+  assert.equal(ended.outcome, "dawn");
+  assert.equal(ended.notice, "Dawn. The transmitter went silent.");
 });
 test("wrong contacts raise alarm; the right contact needs all fragments", () => {
   let s = game();
