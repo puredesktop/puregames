@@ -501,8 +501,7 @@ export function Library({
         <footer className="library-shortcuts">
           {halloween ? (
             <span>
-              <kbd>W A S D</kbd> Walk <kbd>← →</kbd> Turn <kbd>E</kbd> Ring
-              doorbell
+              <kbd>W A S D</kbd> Walk <kbd>← →</kbd> Turn <kbd>E</kbd> Knock
             </span>
           ) : tether ? (
             <span>

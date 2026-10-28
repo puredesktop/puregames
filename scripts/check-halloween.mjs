@@ -213,8 +213,25 @@ try {
   assert.notEqual(states[0].id, old);
   assert.equal(states[0].state.board.visited.length, 1);
   assert.equal(states[0].state.board.players[0].score, 5);
+  const departed = states[3].id;
+  clients[3].close();
+  await wait(() => states[0].peers.size === 3, "departed guest");
+  clients[0].action({ type: "lobby" });
+  await wait(() => states[0].state.phase === "lobby", "recover lobby");
+  clients[0].action({ type: "remove", id: departed });
+  await wait(
+    () => states[0].state.seats.length === 3,
+    "host removes departed seat"
+  );
+  clients[0].action({ type: "start" });
+  await wait(
+    () =>
+      states[0].state.phase === "playing" &&
+      states[0].state.board.players.length === 3,
+    "remaining players restart"
+  );
   console.log(
-    "PASS: four authenticated humans, host-only start, independent movement/turning, two conversations at one door, other players keep moving, shared relic once, pause, coordinator migration and reconnect without duplicate seats or lost progress."
+    "PASS: four authenticated humans, host-only start, independent movement/turning, two conversations at one door, other players keep moving, shared relic once, pause, coordinator migration and reconnect without duplicate seats or lost progress; host can remove a departed player and restart."
   );
 } finally {
   clients.forEach((c) => c.close());

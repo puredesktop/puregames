@@ -949,3 +949,5 @@
 }
 
 .boo-simple { filter: saturate(.35) brightness(.65); }
+
+.boo-lobby-players > div > button { border: 1px solid #71867666; border-radius: 3px; padding: 4px 7px; background: transparent; color: #b6c9b8; font-size: 10px; }

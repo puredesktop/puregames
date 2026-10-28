@@ -553,6 +553,8 @@ function App() {
           onJoin={() => action({ type: "join" })}
           onInvite={server ? () => showInvite("team") : null}
           onLobby={() => action({ type: "lobby" })}
+          onRemove={(id) => action({ type: "remove", id })}
+          onEnd={() => action({ type: "end" })}
           paused={s.paused}
           lobby={s.phase === "lobby"}
           onAction={action}
