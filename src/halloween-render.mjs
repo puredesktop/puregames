@@ -176,6 +176,13 @@ function monster(c, kind, x, y, size, time) {
   c.stroke();
   c.restore();
 }
+function silhouette(c, x, y, size, watcher = false) {
+  c.fillStyle = watcher ? "#07121b" : "#394750";
+  c.beginPath(); c.moveTo(x - size * .28, y); c.lineTo(x - size * .2, y - size * 1.35);
+  c.lineTo(x + size * .2, y - size * 1.35); c.lineTo(x + size * .28, y); c.closePath(); c.fill();
+  ellipse(c, x, y - size * 1.5, size * .18, size * .25, watcher ? "#07121b" : "#657577");
+  for (const side of [-1, 1]) ellipse(c, x + side * size * .065, y - size * 1.51, size * .018, size * .025, watcher ? "#c3ddd0" : "#07121b");
+}
 export function renderHalloween(
   c,
   board,
@@ -482,7 +489,7 @@ export function renderHalloween(
       );
     const visited = board.visited.includes(NEIGHBOURS.indexOf(n));
     sprite(front - s * 0.65, 0, n.z + 0.84, 0.55, (x, y, k) =>
-      monster(c, n.kind, x, y, k, time)
+      silhouette(c, x, y, k)
     );
     sprite(front - s * 0.6, 0.29, n.z - 1.1, 0.44, (x, y, k) =>
       pumpkin(c, x, y, k, time)
@@ -560,12 +567,9 @@ export function renderHalloween(
       i % 2 ? "#e7b272" : "#a692bb"
     );
   }
+  (board.party || []).forEach(p => sprite(p.x, 0, p.z, 1, (x, y, k) => silhouette(c, x, y, k)));
+  if (board.visited.length && board.watcher) sprite(board.watcher.x, 0, board.watcher.z, 1.6, (x, y, k) => silhouette(c, x, y, k, true));
   objects.sort((a, b) => b.depth - a.depth).forEach((o) => o.draw());
-  // At a doorbell the neighbour steps into the conversation, facing the player.
-  if (board.dialogue) {
-    const resident = NEIGHBOURS[board.dialogue.id];
-    monster(c, resident.kind, w * 0.5, h * 0.58, h * 0.3, time);
-  }
   // Drifting gold leaves; no flashing or startling visual effects.
   for (let i = 0; i < 13; i++) {
     const x = ((i * 193 + time * 0.012) % (w + 80)) - 40,
@@ -576,38 +580,13 @@ export function renderHalloween(
     ellipse(c, 0, 0, 3, 1.5, "#edbb8666");
     c.restore();
   }
-  // A first-person sleeve, hand and jack-o'-lantern bucket.
-  const bob = Math.sin(time / 480) * 2,
-    bx = w * 0.81,
-    by = h * 0.97 + bob,
-    bs = Math.min(w * 0.13, h * 0.2);
-  c.save();
-  c.translate(bx, by);
-  c.rotate(-0.08);
-  c.fillStyle = "#5f8790";
-  c.beginPath();
-  c.moveTo(bs * 0.7, bs * 0.35);
-  c.lineTo(bs * 1.7, bs * 0.2);
-  c.lineTo(bs * 1.6, -bs * 0.45);
-  c.lineTo(bs * 0.6, -bs * 0.38);
-  c.fill();
-  ellipse(c, bs * 0.68, -bs * 0.34, bs * 0.21, bs * 0.15, "#dca886");
-  c.strokeStyle = "#ebc482";
-  c.lineWidth = bs * 0.06;
-  c.beginPath();
-  c.ellipse(0, -bs * 0.61, bs * 0.47, bs * 0.43, 0, Math.PI, TAU);
-  c.stroke();
-  pumpkin(c, 0, -bs * 0.2, bs);
-  for (let i = 0; i < Math.min(8, board.players[0].score); i++)
-    ellipse(
-      c,
-      ((i % 4) - 0.5) * bs * 0.18 - bs * 0.18,
-      -bs * 0.48 - Math.floor(i / 4) * bs * 0.12,
-      bs * 0.09,
-      bs * 0.065,
-      ["#d1d3ef", "#a9dabd", "#f6cc92"][i % 3]
-    );
-  c.restore();
+  // A first-person torch, matching the 3D defence mechanic.
+  const bx = w * .83, by = h * 1.03, bs = Math.min(w * .12, h * .23);
+  c.fillStyle = "#1c303a"; c.beginPath();
+  c.moveTo(bx + bs, by); c.lineTo(bx - bs * .3, by - bs * 1.4);
+  c.lineTo(bx + bs * .1, by - bs * 1.6); c.lineTo(bx + bs * 1.8, by); c.fill();
+  ellipse(c, bx - bs * .1, by - bs * 1.45, bs * .32, bs * .2, "#bdd4cf");
+
 }
 export function cameraBetween(a, b, t) {
   return {

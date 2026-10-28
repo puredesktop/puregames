@@ -2,7 +2,7 @@
   "name": "@purescience/puregames",
   "private": true,
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 7196",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@purescience/platform-bridge": "file:../../packages/bridge",
     "@purescience/platform-ui": "file:../../packages/ui",
+    "three": "0.186.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "styled-components": "^6.1.18",

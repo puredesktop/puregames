@@ -153,11 +153,11 @@ export function Library({
   onSelect,
 }) {
   const halloween = room.game === "halloween",
-    solo = halloween || room.game === "letters",
+    solo = room.game === "letters",
     letters = room.game === "letters",
     tether = room.game === "tether",
     noir = room.game === "noir",
-    coop = ["words", "noir", "tether"].includes(room.game),
+    coop = ["words", "noir", "tether", "halloween"].includes(room.game),
     orbit = room.game === "orbit",
     shoot = room.game === "shoot",
     words = room.game === "words",
@@ -338,7 +338,7 @@ export function Library({
                 <i aria-hidden="true" />
                 {solo
                   ? halloween
-                    ? "First-person stroll"
+                    ? "First-person horror"
                     : "Solo word game"
                   : coop
                   ? "Live co-op"
@@ -346,7 +346,9 @@ export function Library({
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                {solo
+                {halloween
+                  ? "Solo or with friends"
+                  : solo
                   ? "Offline ready"
                   : coop
                   ? "Play with agent"
@@ -355,7 +357,7 @@ export function Library({
             </div>
           </div>
           <span className="library-player-count">
-            {solo ? "1 player" : "2–4 players"}
+            {halloween ? "1–4 players" : solo ? "1 player" : "2–4 players"}
           </span>
         </header>
         <div className="library-content">
@@ -381,7 +383,7 @@ export function Library({
               <span>
                 <i />{" "}
                 {halloween
-                  ? "Welcome to Gourd Street"
+                  ? "After midnight on Gourd Street"
                   : letters
                   ? "Eight original themed boards"
                   : tether
@@ -447,13 +449,15 @@ export function Library({
                 ))}
               </div>
             </div>
-            {solo ? (
+            {solo || halloween ? (
               <div className="letter-solo-note">
                 {halloween
-                  ? "Six doorbells. A whole bucket of bad jokes."
+                  ? "Six doors. One way out."
                   : "Your own pace. Your own discoveries."}
                 <br />
-                No team or connection needed. Play opens immediately.
+                {halloween
+                  ? "Explore alone offline, or invite up to three teammates through PureServer. Share the relics. Keep each other in sight."
+                  : "No team or connection needed. Play opens immediately."}
               </div>
             ) : (
               <div className="library-setting">

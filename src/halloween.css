@@ -858,3 +858,94 @@
     font-size: 28px;
   }
 }
+
+/* The world carries the atmosphere; controls sit quietly on its edges. */
+.halloween-stage::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 130px 25px #17152a55; border-radius: inherit;
+}
+.boo-header-actions { flex-wrap: wrap; justify-content: flex-end; }
+.boo-party {
+  position: absolute; left: 24px; bottom: 125px; display: flex; flex-wrap: wrap;
+  gap: 7px 12px; max-width: calc(100% - 48px); padding: 9px 12px;
+  background: #211e37ce; border: 1px solid #e6d7c822; border-radius: 10px;
+  color: #f5e9db; font-size: 11px; backdrop-filter: blur(12px); pointer-events: none;
+}
+.boo-party > span { font-size: 9px; letter-spacing: .14em; align-self: center; color: #ddcaa9; }
+.boo-party b { font-weight: 500; }
+.boo-party b span { color: var(--ghost-colour); margin-right: 4px; }
+.boo-lobby-players { margin: 16px 0; text-align: left; max-width: 350px; width: 100%; }
+.boo-lobby-players > div { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #55445f22; }
+.boo-lobby-players > div > span { color: #a6774c; font-size: 11px; }
+.boo-lobby-players small { margin-left: auto; color: #667467; }
+.boo-lobby-players p { font-size: 12px; line-height: 1.6; }
+.boo-lobby-players strong { letter-spacing: .1em; }
+.boo-lobby-players > button { width: 100%; margin-top: 10px; padding: 10px; border-radius: 9px; border: 1px solid #b8a58b; background: #f8efdf; color: #45374e; }
+.boo-render-note { position: absolute; right: 18px; bottom: 18px; color: #ffedcc; background: #211e37dd; border-radius: 5px; padding: 5px 8px; font-size: 10px; }
+.boo-pause { max-height: calc(100% - 40px); overflow: auto; }
+.boo-shade { z-index: 3; }
+.boo-conversation { z-index: 2; }
+@media (max-width: 800px) {
+  .boo-stage-header { align-items: flex-start; padding: 12px 16px; }
+  .boo-stage-header h1 { font-size: 24px !important; }
+  .boo-header-actions { max-width: 270px; }
+  .boo-header-actions button { padding: 7px; font-size: 10px; }
+  .boo-party { left: 12px; max-width: calc(100% - 24px); bottom: 140px; }
+}
+/* Gourd Street: restrained horror presentation, separate from the surrounding app. */
+.boo-game { background: #101b20; color: #c7d0ca; }
+.boo-stage-header h1 { color: #e5e8dd !important; font-family: Georgia, serif; font-weight: 400; letter-spacing: -.03em; }
+.boo-stage-header > div > .boo-eyebrow { color: #8a9e99; font-size: 9px; }
+.boo-little-ghost { display: none; }
+.boo-header-actions button { color: #b4c3bc; border-color: #52625e66; border-radius: 4px; }
+.boo-header-actions button:hover { background: #6c84751a; }
+.halloween-stage { border-radius: 4px; }
+.halloween-stage::after { box-shadow: inset 0 0 170px 45px #050c1677; }
+.halloween-stage.boo-danger::after { box-shadow: inset 0 0 160px 40px #420f14aa; }
+.boo-passport { background: #111e24dd; color: #c8cfbd; border: 1px solid #91a49a33; border-radius: 4px; backdrop-filter: blur(14px); }
+.boo-stamps span { border-color: #70887b55; color: #99afa6; border-radius: 2px; }
+.boo-stamps span.visited { color: #d8e2d1; background: #607f6555; }
+.boo-passport p { color: #a4b4aa; }
+.boo-treats, .boo-compass button, .boo-interact button { border-radius: 4px; background: #101c25d9; color: #d2ded1; border: 1px solid #84968b44; backdrop-filter: blur(10px); }
+.boo-compass button small { color: #98aaa2; }
+.boo-compass svg { color: #9fbaad; }
+.boo-live-dot { background: #9bbcb0; box-shadow: 0 0 9px #8aaa9f55; }
+.boo-street-label { color: #c5d0ca; }
+.boo-street-label small, .boo-interact small { color: #a2b0aa; }
+.boo-movement button { background: #14212bb0; border-color: #91aa9c33; color: #b1c4b8; border-radius: 3px; }
+.boo-conversation { background: #17252aed; color: #d4d8ca; border: 1px solid #768d7b66; border-radius: 5px; backdrop-filter: blur(16px); box-shadow: 0 20px 70px #0009; }
+.boo-resident h2 { color: #e0e5d6 !important; font-family: Georgia, serif; font-weight: 400; }
+.boo-resident-icon { filter: grayscale(.85) brightness(.65); }
+.boo-quote { color: #d6ded0; font-family: Georgia, serif; font-size: 20px; }
+.boo-choices button { background: #0e1b2188; border-color: #72877b55; color: #c5d4c7; border-radius: 3px; }
+.boo-choices button:hover { background: #49625444; border-color: #b1c5aa; }
+.boo-choices button span { color: #91ac9b; }
+.boo-choices button b, .boo-no-pressure { color: #819b8b; }
+.boo-reward { background: #40554855; color: #becfbb; border-radius: 3px; }
+.boo-reward span { color: #adc7a7; }
+.boo-primary { background: #a5b69b !important; color: #14231f !important; border: 1px solid #b2c1a9 !important; border-radius: 3px !important; }
+.boo-shade { background: #07131a8a; backdrop-filter: blur(3px); }
+.boo-pause, .boo-ending { background: #17252bec; color: #b9c9bb; border: 1px solid #6a817655; border-radius: 5px; }
+.boo-pause h2, .boo-ending h2 { color: #d7e0cf; font-family: Georgia, serif; font-weight: 400; }
+.boo-pause > svg, .boo-ending > svg { color: #9cb09c; }
+.boo-pause > p, .boo-ending > p { color: #9caf9f; }
+.boo-ending h2 em { color: #afc2a8; }
+.boo-haul span { background: #526b4f22; color: #9fb79c; border-color: #637b5d55; }
+.boo-footer { color: #789286; }
+.boo-help { background: #263c37; color: #c3d3c2; }
+.boo-threat { position: absolute; bottom: 33px; right: 22px; max-width: 250px; font-size: 11px; line-height: 1.5; color: #aec0b4; text-align: right; text-shadow: 0 2px 5px #000; pointer-events: none; }
+.boo-danger .boo-threat { color: #e6b8a6; }
+.boo-preview-title b { color: #e4e9df; font-family: Georgia, serif; }
+.boo-preview-title span, .boo-preview-title small { color: #b2c4b9; }
+.boo-preview-sticker { background: #253e35; color: #c2d3c1; border-radius: 2px; transform: rotate(-5deg); }
+@media (max-width: 800px) { .boo-threat { bottom: 188px; left: 16px; right: auto; text-align: left; max-width: 240px; } }
+
+.boo-game, .boo-game * { box-sizing: border-box; }
+.boo-ending .boo-primary { background: #a5b69b !important; color: #14231f !important; }
+.boo-help b { color: #d3decd; }
+@media (max-width: 800px) {
+  .boo-party { bottom: 185px; }
+  .boo-threat { bottom: 235px; }
+}
+
+.boo-simple { filter: saturate(.35) brightness(.65); }

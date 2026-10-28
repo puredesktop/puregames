@@ -233,7 +233,10 @@ export function connectRoom({
     {
       const directions = {};
       for (const [who, request] of inputs.entries())
-        if (request.round === s.round && request.tick >= s.board?.tick - 3)
+        if (
+          request.round === s.round &&
+          request.tick >= (s.board?.tick ?? s.board?.ticks ?? 0) - 3
+        )
           directions[who] = request.direction;
       s = advance(s, directions);
     }
@@ -261,18 +264,29 @@ export function connectRoom({
       else ws?.close();
     },
     action(action) {
-      if (ready && snapshot())
+      if (ready && snapshot()) {
+        const pending = actions.get(id);
+        if (
+          action.type === "look" &&
+          pending?.round === snapshot().round &&
+          pending.action.type === "look"
+        )
+          action = {
+            ...action,
+            delta: (pending.action.delta || 0) + action.delta,
+          };
         actions.set(id, {
           seq: ++sequence,
           round: snapshot().round,
           action: { ...action, revision: snapshot().revision },
         });
+      }
     },
     steer(direction) {
       if (ready && snapshot()?.phase === "playing")
         inputs.set(id, {
           round: snapshot().round,
-          tick: snapshot().board.tick,
+          tick: snapshot().board.tick ?? snapshot().board.ticks ?? 0,
           direction,
         });
     },
