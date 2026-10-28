@@ -1,3 +1,4 @@
+import { isSoloGame } from "./room.mjs";
 import { GAMES } from "./games.mjs";
 export function sessionSummary(state, present) {
   const connected = new Set(present.keys());
@@ -18,7 +19,11 @@ export function sessionSummary(state, present) {
       bot: p.bot,
       connected: p.bot || connected.has(p.id),
     })),
-    capacity: 4,
-    joinable: !state.ended && state.phase === "lobby" && state.seats.length < 4,
+    capacity: isSoloGame(state.game) ? 1 : 4,
+    joinable:
+      !isSoloGame(state.game) &&
+      !state.ended &&
+      state.phase === "lobby" &&
+      state.seats.length < 4,
   };
 }

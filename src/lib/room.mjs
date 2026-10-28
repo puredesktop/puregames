@@ -1,3 +1,5 @@
+import { newHalloween, stepHalloween, halloweenCommand } from "./halloween.mjs";
+export const isSoloGame = (game) => ["letters", "halloween"].includes(game);
 import { newLetters, stepLetters, letterCommand } from "./letters.mjs";
 import { newTether, stepTether, tetherCommand } from "./tether.mjs";
 import { newNoir, stepNoir, noirCommand } from "./noir.mjs";
@@ -6,6 +8,11 @@ import { newSkirmish, stepSkirmish, skirmishBot } from "./skirmish.mjs";
 import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
 const engines = {
+  halloween: {
+    create: newHalloween,
+    step: stepHalloween,
+    bot: () => undefined,
+  },
   letters: { create: newLetters, step: stepLetters, bot: () => undefined },
   tether: { create: newTether, step: stepTether, bot: () => ({ bot: true }) },
   noir: { create: newNoir, step: stepNoir, bot: () => ({ bot: true }) },
@@ -51,7 +58,7 @@ export function command(s, actor, action, host, present) {
     next = { ...s, seats, scores, paused: true };
   } else if (
     action.type === "join" &&
-    s.game !== "letters" &&
+    !isSoloGame(s.game) &&
     s.phase === "lobby" &&
     seat < 0 &&
     s.seats.length < CAPACITY &&
@@ -73,7 +80,7 @@ export function command(s, actor, action, host, present) {
     next = { ...s, seats: s.seats.filter((p) => p.id !== actor) };
   } else if (
     action.type === "bot" &&
-    s.game !== "letters" &&
+    !isSoloGame(s.game) &&
     admin &&
     s.phase === "lobby" &&
     s.seats.length < CAPACITY
@@ -102,7 +109,7 @@ export function command(s, actor, action, host, present) {
     admin &&
     s.phase === "lobby" &&
     Object.hasOwn(engines, action.game) &&
-    (action.game !== "letters" || (s.seats.length === 1 && !s.seats[0].bot))
+    (!isSoloGame(action.game) || (s.seats.length === 1 && !s.seats[0].bot))
   ) {
     next = { ...s, game: action.game, board: null, scores: {}, round: 0 };
   } else if (
@@ -116,7 +123,7 @@ export function command(s, actor, action, host, present) {
     (action.type === "start" || action.type === "rematch") &&
     admin &&
     (s.phase === "lobby" || s.phase === "finished") &&
-    (s.game === "letters"
+    (isSoloGame(s.game)
       ? s.seats.length === 1 && !s.seats[0].bot
       : s.seats.length >= 2) &&
     s.seats.every((p) => p.bot || present.has(p.id))
@@ -126,7 +133,9 @@ export function command(s, actor, action, host, present) {
       phase: "playing",
       round: s.round + 1,
       paused: false,
-      countdown: ["words", "noir", "tether", "letters"].includes(s.game)
+      countdown: ["words", "noir", "tether", "letters", "halloween"].includes(
+        s.game
+      )
         ? 0
         : 30,
       board: engines[s.game].create(s.seats.length, s.arena, s.round + 1),
@@ -142,18 +151,22 @@ export function command(s, actor, action, host, present) {
     next = {
       ...s,
       paused: false,
-      countdown: ["words", "noir", "tether", "letters"].includes(s.game)
+      countdown: ["words", "noir", "tether", "letters", "halloween"].includes(
+        s.game
+      )
         ? 0
         : 30,
     };
   } else if (
-    ["words", "noir", "tether", "letters"].includes(s.game) &&
+    ["words", "noir", "tether", "letters", "halloween"].includes(s.game) &&
     seat >= 0 &&
     present.has(actor) &&
     s.phase === "playing" &&
     !s.paused &&
     !s.countdown &&
-    (s.game === "letters"
+    (s.game === "halloween"
+      ? ["interact", "choice", "continue", "look", "orient"]
+      : s.game === "letters"
       ? ["word", "hint", "reveal"]
       : s.game === "tether"
       ? ["hook"]
@@ -163,7 +176,9 @@ export function command(s, actor, action, host, present) {
     ).includes(action.type)
   ) {
     const board =
-      s.game === "letters"
+      s.game === "halloween"
+        ? halloweenCommand(s.board, seat, action)
+        : s.game === "letters"
         ? letterCommand(s.board, seat, action)
         : s.game === "tether"
         ? tetherCommand(s.board, seat, action)
@@ -187,8 +202,9 @@ export function advance(s, inputs = {}) {
     if (s.board.players[i].alive)
       turns[i] = p.bot
         ? engines[s.game].bot(s.board, i)
-        : ["words", "noir", "tether", "letters"].includes(s.game) &&
-          inputs[p.id]
+        : ["words", "noir", "tether", "letters", "halloween"].includes(
+            s.game
+          ) && inputs[p.id]
         ? {
             focus: inputs[p.id].focus,
             x: inputs[p.id].x,
