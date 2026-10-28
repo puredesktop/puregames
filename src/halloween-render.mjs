@@ -561,6 +561,11 @@ export function renderHalloween(
     );
   }
   objects.sort((a, b) => b.depth - a.depth).forEach((o) => o.draw());
+  // At a doorbell the neighbour steps into the conversation, facing the player.
+  if (board.dialogue) {
+    const resident = NEIGHBOURS[board.dialogue.id];
+    monster(c, resident.kind, w * 0.5, h * 0.58, h * 0.3, time);
+  }
   // Drifting gold leaves; no flashing or startling visual effects.
   for (let i = 0; i < 13; i++) {
     const x = ((i * 193 + time * 0.012) % (w + 80)) - 40,
