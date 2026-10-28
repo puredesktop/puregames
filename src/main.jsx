@@ -33,13 +33,14 @@ import { SkirmishArena } from "./SkirmishArena.jsx";
 import { newSkirmish } from "./lib/skirmish.mjs";
 import { WordArena } from "./WordArena.jsx";
 import { newWords } from "./lib/words.mjs";
-import { GAMES } from "./lib/games.mjs";
+import { GAMES, isAvailableGame } from "./lib/games.mjs";
 import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 import "./letters.css";
 const me = { id: "local", name: "You", bot: false };
-const initial = (game = "vector") =>
-  canPlayAlone(game)
+const initial = (requestedGame = "vector") => {
+  const game = isAvailableGame(requestedGame) ? requestedGame : "vector";
+  return canPlayAlone(game)
     ? createRoom("Solo session", me, game)
     : command(
         createRoom("Local table", me, game),
@@ -48,6 +49,7 @@ const initial = (game = "vector") =>
         "local",
         new Map([["local", me]])
       );
+};
 const ROOT = "/Workspace/Games";
 const title = "Team game";
 function App() {
@@ -246,6 +248,10 @@ function App() {
     setBusy(true);
     setError("");
     try {
+      if (create && !isAvailableGame(s.game))
+        throw Error(
+          "This game is no longer available. Choose another game from the library."
+        );
       if (create)
         await request(
           "write",
@@ -260,9 +266,12 @@ function App() {
       const saved = JSON.parse(await request("read", path));
       if (saved.format !== "puregames-room" || saved.version !== 1)
         throw Error("This is not a supported PureGames game.");
-      // Retired games return to a Ribbon Run lobby when an older room is reopened.
-      if (saved.state && !Object.hasOwn(GAMES, saved.state.game))
-        delete saved.state;
+      // Retired checkpoints stay untouched; never replace a saved game with another.
+      const savedGame = saved.state?.game || saved.game;
+      if (savedGame && !isAvailableGame(savedGame))
+        throw Error(
+          "This game is no longer available. Choose another game from the library."
+        );
       const session = await request("join", path);
       if (!session?.url)
         throw Error("This host does not support a PureServer live connection.");
@@ -383,6 +392,10 @@ function App() {
         <div className="game-title">
           <button
             onClick={() => {
+              if (!isAvailableGame(s.game)) {
+                leave("library");
+                return;
+              }
               if (!remote) setLocal((v) => ({ ...v, paused: true }));
               setScreen("library");
             }}
@@ -478,6 +491,13 @@ function App() {
             else setScreen("library");
           }}
         />
+      ) : !isAvailableGame(s.game) ? (
+        <div className="active-empty">
+          <h2>This game is no longer available</h2>
+          <button className="primary" onClick={() => leave("library")}>
+            Choose a game
+          </button>
+        </div>
       ) : screen === "library" ? (
         <Library
           room={s}
@@ -485,6 +505,7 @@ function App() {
           remote={remote}
           onOpen={() => setScreen("table")}
           onSelect={(game) => {
+            if (!isAvailableGame(game)) return;
             if (remote) {
               leave("library");
               setLocal(initial(game));

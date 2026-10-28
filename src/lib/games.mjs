@@ -56,6 +56,7 @@ export const GAMES = {
     ],
   },
   noir: {
+    retired: true,
     name: "The Ninth Bell",
     subtitle: "Live noir pursuit",
     genre: "Real-time · Stealth · Mystery",
@@ -126,3 +127,8 @@ export const GAMES = {
     ],
   },
 };
+
+// Keep retired metadata for old checkpoints, but exclude it from every offered game.
+export const isAvailableGame = (id) =>
+  Object.hasOwn(GAMES, id) && !GAMES[id].retired;
+export const AVAILABLE_GAMES = Object.keys(GAMES).filter(isAvailableGame);
