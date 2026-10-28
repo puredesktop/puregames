@@ -1,3 +1,6 @@
+import { HalloweenArena } from "./HalloweenArena.jsx";
+import { newHalloween } from "./lib/halloween.mjs";
+import "./halloween.css";
 import { ActiveGames } from "./ActiveGames.jsx";
 import { TeamPicker } from "./TeamPicker.jsx";
 import { LetterArena } from "./LetterArena.jsx";
@@ -12,7 +15,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { AppFrame } from "@purescience/platform-bridge/components/AppFrame";
 import { bridge } from "@purescience/platform-bridge/client";
-import { createRoom, command, advance } from "./lib/room.mjs";
+import { createRoom, command, advance, isSoloGame } from "./lib/room.mjs";
 import { newRace } from "./lib/trails.mjs";
 import { connectRoom } from "./lib/shared.mjs";
 import { Arena, colours } from "./Arena.jsx";
@@ -27,8 +30,8 @@ import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 import "./letters.css";
 const me = { id: "local", name: "You", bot: false };
-const initial = (game = "letters") =>
-  game === "letters"
+const initial = (game = "halloween") =>
+  isSoloGame(game)
     ? createRoom("Solo session", me, game)
     : command(
         createRoom("Local table", me, game),
@@ -66,7 +69,9 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
-  const letters = s.game === "letters",
+  const halloween = s.game === "halloween",
+    solo = isSoloGame(s.game),
+    letters = s.game === "letters",
     tether = s.game === "tether",
     noir = s.game === "noir",
     coop = ["noir", "words", "tether"].includes(s.game),
@@ -170,7 +175,13 @@ function App() {
   const focusArena = () =>
     surface.current
       ?.querySelector(
-        letters ? ".letter-entry" : words ? ".word-entry" : ".arena-wrap"
+        halloween
+          ? ".halloween-stage"
+          : letters
+          ? ".letter-entry"
+          : words
+          ? ".word-entry"
+          : ".arena-wrap"
       )
       ?.focus({ preventScroll: true });
   const togglePause = () => {
@@ -287,7 +298,7 @@ function App() {
     setInvite(mode);
   }
   async function playNow() {
-    if (letters && !remote) {
+    if (solo && !remote) {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     } else if (remote) {
@@ -340,7 +351,7 @@ function App() {
     }
   }
   const ready =
-    (letters ? s.seats.length === 1 : s.seats.length >= 2) &&
+    (solo ? s.seats.length === 1 : s.seats.length >= 2) &&
     s.seats.every((p) => p.bot || peers.has(p.id));
   return (
     <div
@@ -386,7 +397,7 @@ function App() {
           </strong>
           {screen === "table" && (
             <span>
-              {remote ? "Team game" : letters ? "Solo game" : "Local game"}
+              {remote ? "Team game" : solo ? "Solo game" : "Local game"}
             </span>
           )}
         </div>
@@ -473,12 +484,11 @@ function App() {
                   : {
                       ...v,
                       game,
-                      seats:
-                        game === "letters"
-                          ? [me]
-                          : v.game === "letters"
-                          ? initial(game).seats
-                          : v.seats,
+                      seats: isSoloGame(game)
+                        ? [me]
+                        : isSoloGame(v.game)
+                        ? initial(game).seats
+                        : v.seats,
                       arena: "open",
                       phase: "lobby",
                       board: null,
@@ -503,7 +513,7 @@ function App() {
           onPlay={() => {
             setScreen("table");
             if (!remote && s.phase !== "playing") void playNow();
-            else if (!remote && letters && s.paused) action({ type: "resume" });
+            else if (!remote && solo && s.paused) action({ type: "resume" });
           }}
         />
       ) : remote?.state?.ended ? (
@@ -518,6 +528,16 @@ function App() {
         <div className="empty-state">
           Connecting to game… <button onClick={() => leave()}>Cancel</button>
         </div>
+      ) : halloween ? (
+        <HalloweenArena
+          board={s.board?.kind === "halloween" ? s.board : newHalloween()}
+          paused={s.paused}
+          lobby={s.phase === "lobby"}
+          onAction={action}
+          onSteer={steer}
+          onPause={togglePause}
+          onPlay={playNow}
+        />
       ) : (
         <>
           <div className="match">

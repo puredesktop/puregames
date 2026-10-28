@@ -1,4 +1,18 @@
 export const GAMES = {
+  halloween: {
+    name: "Boo, Please!",
+    subtitle: "A very polite Halloween",
+    genre: "Solo · First person · Cosy comedy",
+    tagline: "Big night. Little scares. Terrible jokes.",
+    description:
+      "Trick-or-treat down a tiny street of very friendly monsters. Ring six doorbells, pick a ridiculous reply, and fill your bucket. No fighting, no jump scares. Just a frightfully nice evening.",
+    arenas: { open: "An autumn evening", islands: "An autumn evening" },
+    goal: "6 neighbours · 5 bonus sweets · Zero jump scares",
+    rules: [
+      "W/S or Up/Down walk. Left/Right turn; A/D sidestep. Drag the scene to look around. Shift strolls faster. Get close to a glowing porch and press E or Ring doorbell. P pauses.",
+      "Choose any reply to earn a treat. Visit all six neighbours to finish. Pick up the five glowing sweets along the street for a bonus. Follow the porch compass if you get lost. There is no timer and no wrong answer.",
+    ],
+  },
   letters: {
     name: "Letterlight",
     subtitle: "Solo word discovery",

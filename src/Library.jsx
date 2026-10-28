@@ -1,3 +1,4 @@
+import { HalloweenPreview } from "./HalloweenArena.jsx";
 import { LetterPreview } from "./LetterArena.jsx";
 import { TetherPreview } from "./TetherArena.jsx";
 import { NoirPreview } from "./NoirScene.jsx";
@@ -151,7 +152,9 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const letters = room.game === "letters",
+  const halloween = room.game === "halloween",
+    solo = halloween || room.game === "letters",
+    letters = room.game === "letters",
     tether = room.game === "tether",
     noir = room.game === "noir",
     coop = ["words", "noir", "tether"].includes(room.game),
@@ -172,131 +175,154 @@ export function Library({
           Library{" "}
           <span>{String(Object.keys(GAMES).length).padStart(2, "0")}</span>
         </div>
-        {["letters", "tether", "noir", "words", "shoot", "orbit", "ribbon"].map(
-          (game) => (
-            <button
-              key={game}
-              className={`library-game ${room.game === game ? "selected" : ""}`}
-              aria-current={room.game === game ? "page" : undefined}
-              onClick={() => onSelect(game)}
-            >
-              <span className={`library-game-icon ${game}`}>
-                {game === "letters" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <rect
-                      x="6"
-                      y="6"
-                      width="28"
-                      height="28"
-                      rx="6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="m12 28 8-16 8 16M15 22h10"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                ) : game === "tether" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <rect
-                      x="5"
-                      y="8"
-                      width="13"
-                      height="12"
-                      rx="5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M18 14c14 0-9 18 5 18"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <rect
-                      x="23"
-                      y="22"
-                      width="12"
-                      height="12"
-                      rx="2"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                ) : game === "noir" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <path
-                      d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="m7 8 3 3m23-3-3 3"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                ) : game === "words" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <rect
-                      x="5"
-                      y="7"
-                      width="21"
-                      height="26"
-                      rx="3"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <path
-                      d="M11 15h9M11 21h9M11 27h5M29 14h6v20H17"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                ) : game === "shoot" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
-                    <path
-                      d="m27 3 1 4M33 10l4 1M9 27l-4 5M14 30l-3 5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                ) : game === "orbit" ? (
-                  <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
-                    <circle
-                      cx="20"
-                      cy="20"
-                      r="7"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                    <ellipse
-                      cx="20"
-                      cy="20"
-                      rx="17"
-                      ry="8"
-                      transform="rotate(-35 20 20)"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    />
-                    <circle cx="33" cy="11" r="3" fill="currentColor" />
-                  </svg>
-                ) : (
-                  <RibbonMark />
-                )}
-              </span>
-              <span>
-                <strong>
-                  {GAMES[game].name}
-                  {game === "letters" && <em className="library-new">NEW</em>}
-                </strong>
-                <small>{GAMES[game].subtitle}</small>
-              </span>
-            </button>
-          )
-        )}
+        {[
+          "halloween",
+          "letters",
+          "tether",
+          "noir",
+          "words",
+          "shoot",
+          "orbit",
+          "ribbon",
+        ].map((game) => (
+          <button
+            key={game}
+            aria-label={GAMES[game].name}
+            className={`library-game ${room.game === game ? "selected" : ""}`}
+            aria-current={room.game === game ? "page" : undefined}
+            onClick={() => onSelect(game)}
+          >
+            <span className={`library-game-icon ${game}`}>
+              {game === "halloween" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path
+                    d="M8 31V19a12 12 0 0 1 24 0v12l-6-3-6 4-6-4-6 3Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <circle cx="16" cy="18" r="2" fill="currentColor" />
+                  <circle cx="25" cy="18" r="2" fill="currentColor" />
+                  <path
+                    d="M17 25q4 4 8-1"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "letters" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect
+                    x="6"
+                    y="6"
+                    width="28"
+                    height="28"
+                    rx="6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="m12 28 8-16 8 16M15 22h10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "tether" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect
+                    x="5"
+                    y="8"
+                    width="13"
+                    height="12"
+                    rx="5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M18 14c14 0-9 18 5 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <rect
+                    x="23"
+                    y="22"
+                    width="12"
+                    height="12"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "noir" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 27v-11a8 8 0 0 1 16 0v11l4 4H8l4-4Zm5 8h6M20 4v4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="m7 8 3 3m23-3-3 3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "words" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect
+                    x="5"
+                    y="7"
+                    width="21"
+                    height="26"
+                    rx="3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M11 15h9M11 21h9M11 27h5M29 14h6v20H17"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "shoot" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="m29 10-5 24-7-11-11-7z" fill="currentColor" />
+                  <path
+                    d="m27 3 1 4M33 10l4 1M9 27l-4 5M14 30l-3 5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                </svg>
+              ) : game === "orbit" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <circle
+                    cx="20"
+                    cy="20"
+                    r="7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <ellipse
+                    cx="20"
+                    cy="20"
+                    rx="17"
+                    ry="8"
+                    transform="rotate(-35 20 20)"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <circle cx="33" cy="11" r="3" fill="currentColor" />
+                </svg>
+              ) : (
+                <RibbonMark />
+              )}
+            </span>
+            <span>
+              <strong>
+                {GAMES[game].name}
+                {game === "halloween" && <em className="library-new">NEW</em>}
+              </strong>
+              <small>{GAMES[game].subtitle}</small>
+            </span>
+          </button>
+        ))}
         <div className="library-connection">
           <i />
           {server ? "Team play available" : "Offline play available"}
@@ -310,15 +336,17 @@ export function Library({
             <div className="game-mode-labels" aria-label="Supported play modes">
               <span className="mode-live">
                 <i aria-hidden="true" />
-                {letters
-                  ? "Solo word game"
+                {solo
+                  ? halloween
+                    ? "First-person stroll"
+                    : "Solo word game"
                   : coop
                   ? "Live co-op"
                   : "Live multiplayer"}
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                {letters
+                {solo
                   ? "Offline ready"
                   : coop
                   ? "Play with agent"
@@ -327,12 +355,14 @@ export function Library({
             </div>
           </div>
           <span className="library-player-count">
-            {letters ? "1 player" : "2–4 players"}
+            {solo ? "1 player" : "2–4 players"}
           </span>
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {letters ? (
+            {halloween ? (
+              <HalloweenPreview />
+            ) : letters ? (
               <LetterPreview />
             ) : tether ? (
               <TetherPreview />
@@ -350,7 +380,9 @@ export function Library({
             <div className="preview-caption">
               <span>
                 <i />{" "}
-                {letters
+                {halloween
+                  ? "Welcome to Gourd Street"
+                  : letters
                   ? "Eight original themed boards"
                   : tether
                   ? "Aurelia salvage yard"
@@ -368,7 +400,7 @@ export function Library({
               <h2>{info.tagline}</h2>
               <p>{info.description}</p>
             </div>
-            <div className="library-setting">
+            <div className="library-setting" hidden={halloween}>
               <span className="library-section-label">
                 {coop || letters ? "Mode" : "Arena"}
               </span>
@@ -415,12 +447,13 @@ export function Library({
                 ))}
               </div>
             </div>
-            {letters ? (
+            {solo ? (
               <div className="letter-solo-note">
-                Your own pace. Your own discoveries.
+                {halloween
+                  ? "Six doorbells. A whole bucket of bad jokes."
+                  : "Your own pace. Your own discoveries."}
                 <br />
-                No team or connection needed. Play opens your puzzle
-                immediately.
+                No team or connection needed. Play opens immediately.
               </div>
             ) : (
               <div className="library-setting">
@@ -453,7 +486,7 @@ export function Library({
                 </svg>
                 {remote || room.phase === "playing" ? "Return to game" : "Play"}
               </button>
-              {!letters && (
+              {!solo && (
                 <button className="library-table" onClick={onOpen}>
                   Table & players <span>→</span>
                 </button>
@@ -462,7 +495,12 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
-          {tether ? (
+          {halloween ? (
+            <span>
+              <kbd>W A S D</kbd> Walk <kbd>← →</kbd> Turn <kbd>E</kbd> Ring
+              doorbell
+            </span>
+          ) : tether ? (
             <span>
               <kbd>↑ ← ↓ →</kbd> Move <kbd>Space</kbd> Hook <kbd>Shift</kbd>{" "}
               Brake
@@ -492,7 +530,7 @@ export function Library({
           ) : (
             !noir && (
               <span>
-                <kbd>{shoot || tether ? "P" : "Space"}</kbd> Pause
+                <kbd>{halloween || shoot || tether ? "P" : "Space"}</kbd> Pause
               </span>
             )
           )}
