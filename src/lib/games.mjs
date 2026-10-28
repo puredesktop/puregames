@@ -1,10 +1,25 @@
 export const GAMES = {
+  vector: {
+    name: "Vector Wake",
+    subtitle: "3D vector cockpit combat",
+    genre: "Solo · Cockpit · Vector flight",
+    tagline: "The silence ends here.",
+    description:
+      "Fly the Vela-9 through a sky of luminous wireframe ships. Break three hostile sectors, dodge incoming fire and silence the Lattice Ark. Original spacecraft. Pure line art.",
+    arenas: { open: "Cadet", islands: "Veteran" },
+    goal: "3 sectors · Twin cannons · Lock-on seekers",
+    rules: [
+      "Arrow keys or WASD steer your nose; optional Mouse flight is off by default. Click or hold Space to fire. Hold Shift to boost, X to brake, Q/E to bank, Z/C to evade-roll. R launches a seeker after the lock ring fills. P or Escape pauses.",
+      "Fighters dive and cross your nose. Break away from incoming volleys, chase quick kills for chain bonuses, and clear all three sectors to destroy the Lattice Ark. Release fire to cool the cannons. Shields recharge after seven seconds without damage. Each sector restores shields and two seekers. Collect cyan shield cells from wrecks to restore shield and boost. Avoid red bolts and debris; follow the contact arrow to find ships behind you.",
+    ],
+  },
   halloween: {
     name: "Gourd Street",
     subtitle: "The lights are still on",
     genre: "1–4 players · First person · Atmospheric horror",
     tagline: "Six doors. One way out.",
-    description: "A street that should not exist. Six residents who remember you. Something moving in the fog. Recover the relics, keep it in your light, and find your way out—alone or with up to three friends.",
+    description:
+      "A street that should not exist. Six residents who remember you. Something moving in the fog. Recover the relics, keep it in your light, and find your way out—alone or with up to three friends.",
     arenas: { open: "After midnight", islands: "After midnight" },
     goal: "6 relics · 5 lost echoes · Stay together",
     rules: [
