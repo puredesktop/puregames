@@ -1,3 +1,4 @@
+import { VectorPreview } from "./VectorArena.jsx";
 import { HalloweenPreview } from "./HalloweenArena.jsx";
 import { LetterPreview } from "./LetterArena.jsx";
 import { TetherPreview } from "./TetherArena.jsx";
@@ -152,8 +153,9 @@ export function Library({
   onArena,
   onSelect,
 }) {
-  const halloween = room.game === "halloween",
-    solo = room.game === "letters",
+  const vector = room.game === "vector",
+    halloween = room.game === "halloween",
+    solo = ["letters", "vector"].includes(room.game),
     letters = room.game === "letters",
     tether = room.game === "tether",
     noir = room.game === "noir",
@@ -176,6 +178,7 @@ export function Library({
           <span>{String(Object.keys(GAMES).length).padStart(2, "0")}</span>
         </div>
         {[
+          "vector",
           "halloween",
           "letters",
           "tether",
@@ -193,7 +196,15 @@ export function Library({
             onClick={() => onSelect(game)}
           >
             <span className={`library-game-icon ${game}`}>
-              {game === "halloween" ? (
+              {game === "vector" ? (
+                <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path
+                    d="M20 5 6 30l14-6 14 6L20 5Zm0 0v19M6 30l6-13 8 7 8-7 6 13M15 33h10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                </svg>
+              ) : game === "halloween" ? (
                 <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <path
                     d="M8 31V19a12 12 0 0 1 24 0v12l-6-3-6 4-6-4-6 3Z"
@@ -317,7 +328,7 @@ export function Library({
             <span>
               <strong>
                 {GAMES[game].name}
-                {game === "halloween" && <em className="library-new">NEW</em>}
+                {game === "vector" && <em className="library-new">NEW</em>}
               </strong>
               <small>{GAMES[game].subtitle}</small>
             </span>
@@ -339,6 +350,8 @@ export function Library({
                 {solo
                   ? halloween
                     ? "First-person horror"
+                    : vector
+                    ? "3D cockpit combat"
                     : "Solo word game"
                   : coop
                   ? "Live co-op"
@@ -362,7 +375,9 @@ export function Library({
         </header>
         <div className="library-content">
           <div className="library-preview">
-            {halloween ? (
+            {vector ? (
+              <VectorPreview />
+            ) : halloween ? (
               <HalloweenPreview />
             ) : letters ? (
               <LetterPreview />
@@ -404,7 +419,7 @@ export function Library({
             </div>
             <div className="library-setting" hidden={halloween}>
               <span className="library-section-label">
-                {coop || letters ? "Mode" : "Arena"}
+                {vector ? "Difficulty" : coop || letters ? "Mode" : "Arena"}
               </span>
               <div className="library-arena-options">
                 {["open", "islands"].map((arena) => (
@@ -414,7 +429,7 @@ export function Library({
                     disabled={
                       remote ||
                       (room.phase !== "lobby" &&
-                        !(letters && room.phase === "finished"))
+                        !((letters || vector) && room.phase === "finished"))
                     }
                     onClick={() => onArena(arena)}
                   >
@@ -453,6 +468,8 @@ export function Library({
               <div className="letter-solo-note">
                 {halloween
                   ? "Six doors. One way out."
+                  : vector
+                  ? "Your cockpit. Your flight."
                   : "Your own pace. Your own discoveries."}
                 <br />
                 {halloween
@@ -499,7 +516,12 @@ export function Library({
           </aside>
         </div>
         <footer className="library-shortcuts">
-          {halloween ? (
+          {vector ? (
+            <span>
+              <kbd>Arrows / WASD / Mouse</kbd> Steer <kbd>Space</kbd> Fire{" "}
+              <kbd>R</kbd> Seeker
+            </span>
+          ) : halloween ? (
             <span>
               <kbd>W A S D</kbd> Walk <kbd>← →</kbd> Turn <kbd>E</kbd> Knock
             </span>
@@ -533,7 +555,10 @@ export function Library({
           ) : (
             !noir && (
               <span>
-                <kbd>{halloween || shoot || tether ? "P" : "Space"}</kbd> Pause
+                <kbd>
+                  {vector || halloween || shoot || tether ? "P" : "Space"}
+                </kbd>{" "}
+                Pause
               </span>
             )
           )}

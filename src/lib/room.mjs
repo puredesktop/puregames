@@ -1,6 +1,8 @@
+import { newVector, stepVector } from "./vector-wake.mjs";
 import { newHalloween, stepHalloween, halloweenCommand } from "./halloween.mjs";
-export const canPlayAlone = (game) => ["letters", "halloween"].includes(game);
-export const isSoloGame = (game) => game === "letters";
+export const canPlayAlone = (game) =>
+  ["letters", "halloween", "vector"].includes(game);
+export const isSoloGame = (game) => ["letters", "vector"].includes(game);
 import { newLetters, stepLetters, letterCommand } from "./letters.mjs";
 import { newTether, stepTether, tetherCommand } from "./tether.mjs";
 import { newNoir, stepNoir, noirCommand } from "./noir.mjs";
@@ -9,6 +11,7 @@ import { newSkirmish, stepSkirmish, skirmishBot } from "./skirmish.mjs";
 import { newOrbit, stepOrbit, orbitBot } from "./orbit.mjs";
 import { newRace, step, steer } from "./trails.mjs";
 const engines = {
+  vector: { create: newVector, step: stepVector, bot: () => undefined },
   halloween: {
     create: newHalloween,
     step: stepHalloween,
@@ -136,9 +139,14 @@ export function command(s, actor, action, host, present) {
       phase: "playing",
       round: s.round + 1,
       paused: false,
-      countdown: ["words", "noir", "tether", "letters", "halloween"].includes(
-        s.game
-      )
+      countdown: [
+        "words",
+        "noir",
+        "tether",
+        "letters",
+        "halloween",
+        "vector",
+      ].includes(s.game)
         ? 0
         : 30,
       board: engines[s.game].create(s.seats.length, s.arena, s.round + 1),
@@ -154,9 +162,14 @@ export function command(s, actor, action, host, present) {
     next = {
       ...s,
       paused: false,
-      countdown: ["words", "noir", "tether", "letters", "halloween"].includes(
-        s.game
-      )
+      countdown: [
+        "words",
+        "noir",
+        "tether",
+        "letters",
+        "halloween",
+        "vector",
+      ].includes(s.game)
         ? 0
         : 30,
     };

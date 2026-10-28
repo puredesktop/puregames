@@ -1,3 +1,5 @@
+import { VectorArena } from "./VectorArena.jsx";
+import { newVector } from "./lib/vector-wake.mjs";
 import { HalloweenArena } from "./HalloweenArena.jsx";
 import { newHalloween } from "./lib/halloween.mjs";
 import "./halloween.css";
@@ -36,7 +38,7 @@ import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 import "./letters.css";
 const me = { id: "local", name: "You", bot: false };
-const initial = (game = "halloween") =>
+const initial = (game = "vector") =>
   canPlayAlone(game)
     ? createRoom("Solo session", me, game)
     : command(
@@ -75,7 +77,8 @@ function App() {
   const peers =
     remote?.peers ||
     new Map(local.seats.filter((p) => !p.bot).map((p) => [p.id, p]));
-  const halloween = s.game === "halloween",
+  const vector = s.game === "vector",
+    halloween = s.game === "halloween",
     solo = isSoloGame(s.game),
     letters = s.game === "letters",
     tether = s.game === "tether",
@@ -181,7 +184,9 @@ function App() {
   const focusArena = () =>
     surface.current
       ?.querySelector(
-        halloween
+        vector
+          ? ".vector-stage"
+          : halloween
           ? ".halloween-stage"
           : letters
           ? ".letter-entry"
@@ -362,7 +367,9 @@ function App() {
   return (
     <div
       className={`game-viewport software ${
-        letters
+        vector
+          ? "vector-mode"
+          : letters
           ? "letters-mode"
           : tether
           ? "tether-mode"
@@ -506,7 +513,7 @@ function App() {
               );
           }}
           onArena={(arena) => {
-            if (letters && !remote && s.phase === "finished")
+            if ((letters || vector) && !remote && s.phase === "finished")
               setLocal((v) => ({
                 ...v,
                 arena,
@@ -535,6 +542,16 @@ function App() {
         <div className="empty-state">
           Connecting to game… <button onClick={() => leave()}>Cancel</button>
         </div>
+      ) : vector ? (
+        <VectorArena
+          board={s.board?.kind === "vector" ? s.board : newVector(1, s.arena)}
+          lobby={s.phase === "lobby"}
+          paused={s.paused}
+          onSteer={steer}
+          onPause={togglePause}
+          onPlay={playNow}
+          onLobby={() => action({ type: "lobby" })}
+        />
       ) : halloween ? (
         <HalloweenArena
           board={

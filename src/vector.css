@@ -1,0 +1,451 @@
+.vector-shell {
+  --v-ink: #88e9cd;
+  --v-dim: #447f70;
+  --v-line: #164539;
+  display: flex;
+  flex: 1;
+  min-height: 650px;
+  flex-direction: column;
+  background: #010606;
+  color: var(--v-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  isolation: isolate;
+}
+.vector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 20px 26px 17px;
+  border-bottom: 1px solid var(--v-line);
+  background: #020b09;
+}
+.vector-header h1 {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  line-height: 1.2;
+  margin: 5px 0 0;
+  color: #c5ffe9;
+}
+.vector-header h1 > span {
+  color: #a6ff5d;
+}
+.vector-eyebrow {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #63a996;
+}
+.vector-mission {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-right: auto;
+}
+.vector-mission small {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: #508979;
+}
+.vector-mission strong {
+  font-size: 12px;
+  font-weight: 400;
+  color: #acdbc9;
+}
+.vector-options {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.vector-shell button {
+  border: 1px solid #235246;
+  background: #05130e;
+  color: #9be9ce;
+  border-radius: 2px;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+}
+.vector-shell button:hover:not(:disabled) {
+  background: #102e21;
+  color: #d4ffe5;
+  border-color: #80c395;
+}
+.vector-shell button[aria-pressed="true"] {
+  background: #112719;
+  border-color: #345b3d;
+  color: #baf893;
+}
+.vector-shell button:focus-visible {
+  outline: 2px solid #b8ff65;
+  outline-offset: 3px;
+}
+.vector-stage {
+  position: relative;
+  flex: 1;
+  min-height: 500px;
+  overflow: hidden;
+  background: #010606;
+  outline: none !important;
+}
+.vector-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: crosshair;
+}
+.vector-telemetry {
+  position: absolute;
+  inset: 20px 26px auto;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  pointer-events: none;
+  letter-spacing: 1px;
+  font-size: 9px;
+  color: #4a8b74;
+}
+.vector-telemetry b {
+  font-weight: 400;
+  font-size: 16px;
+  color: #b9f6d1;
+  margin-right: 6px;
+}
+.vector-telemetry > span:last-child {
+  margin-left: auto;
+}
+.vector-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 12px 26px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #427865;
+  border-top: 1px solid var(--v-line);
+  background: #020b09;
+}
+.vector-footer b {
+  font-weight: 400;
+  color: #8fb59d;
+}
+.vector-footer i {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  background: #a4ee69;
+  border-radius: 50%;
+  margin-right: 6px;
+  box-shadow: 0 0 7px #b8ff65;
+}
+.vector-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: #000b08bd;
+  overflow: auto;
+}
+.vector-brief {
+  width: min(620px, 100%);
+  border: 1px solid #235243;
+  padding: 34px 38px;
+  background: #020b09f5;
+  box-shadow: 0 0 90px #326c3220;
+}
+.vector-brief h2 {
+  color: #c3ffd7;
+  font-size: clamp(24px, 3.1vw, 38px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  margin: 16px 0;
+}
+.vector-brief p {
+  font-size: 12px;
+  color: #8dad9d;
+  line-height: 1.8;
+  margin: 14px 0;
+}
+.vector-loadout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  border-block: 1px solid #17372b;
+  padding: 17px 0;
+  margin: 22px 0;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #a2d49a;
+}
+.vector-brief .vector-hint {
+  font-size: 10px;
+  color: #709a7d;
+}
+.vector-brief-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+.vector-shell .vector-launch {
+  display: flex;
+  align-items: center;
+  gap: 35px;
+  background: #b3f67c;
+  color: #102411;
+  border-color: #b3f67c;
+  font-size: 12px;
+  padding: 13px 18px;
+  font-weight: 600;
+}
+.vector-shell .vector-launch:hover {
+  background: #d1ffa7;
+  color: #102411;
+}
+.vector-brief dl {
+  margin: 20px 0;
+}
+.vector-brief dl > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  border-top: 1px solid #17372b;
+  padding: 10px 0;
+  font-size: 10px;
+  line-height: 1.6;
+}
+.vector-brief dt {
+  color: #bded9f;
+}
+.vector-brief dd {
+  margin: 0;
+  color: #8dad9d;
+}
+.vector-results {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  color: #619276;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.vector-results b {
+  display: block;
+  color: #c3ffd7;
+  font-size: 24px;
+  margin-bottom: 7px;
+  font-weight: 400;
+}
+.vector-touch {
+  position: absolute;
+  bottom: 80px;
+  left: 18px;
+  right: 18px;
+  display: none;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.vector-touch > div {
+  display: flex;
+  gap: 5px;
+  pointer-events: auto;
+}
+.vector-touch button {
+  min-height: 40px;
+  padding: 8px 12px;
+  touch-action: none;
+  background: #081b13dc;
+}
+.vector-library-preview {
+  height: 100%;
+  min-height: 430px;
+  position: relative;
+  overflow: hidden;
+  background: #010606;
+}
+.vector-preview-type {
+  position: absolute;
+  inset: 45px auto auto 42px;
+  pointer-events: none;
+}
+.vector-preview-type small {
+  font: 9px ui-monospace, monospace;
+  letter-spacing: 3px;
+  color: #92cfa4;
+}
+.vector-preview-type strong {
+  display: block;
+  font: 500 clamp(40px, 6vw, 77px) / 0.94 ui-monospace, monospace;
+  letter-spacing: -4px;
+  color: #d0ffe7;
+  margin-top: 20px;
+}
+.vector-preview-type strong span {
+  color: #b8ff65;
+}
+.vector-preview-type p {
+  font: 11px ui-monospace, monospace;
+  color: #89b195;
+  max-width: 220px;
+  line-height: 1.8;
+}
+.vector-preview-corner {
+  position: absolute;
+  bottom: 18px;
+  right: 20px;
+  font: 8px ui-monospace, monospace;
+  letter-spacing: 1px;
+  color: #4b8c70;
+}
+.library-game-icon.vector {
+  color: #9fbf35;
+  background: #e9efce;
+}
+.vector-mode .game-toolbar {
+  background: #07120f;
+  color: #93c6ae;
+  border-color: #204137;
+}
+.vector-mode .game-toolbar button {
+  background: #07120f;
+  color: #93c6ae;
+  border-color: #204137;
+}
+.vector-mode .connection {
+  color: #87b47c;
+}
+.vector-mode {
+  background: #010606;
+}
+@media (max-width: 1000px) {
+  .vector-header {
+    gap: 15px;
+    padding: 14px 18px;
+  }
+  .vector-header h1 {
+    font-size: 19px;
+    letter-spacing: 2px;
+  }
+  .vector-mission {
+    display: none;
+  }
+  .vector-footer > span:last-child {
+    display: none;
+  }
+  .vector-options {
+    gap: 4px;
+  }
+  .vector-options button {
+    padding: 7px;
+    font-size: 9px;
+  }
+  .vector-telemetry {
+    inset: 17px 20px auto;
+  }
+}
+@media (max-width: 650px) {
+  .vector-shell {
+    min-height: 620px;
+  }
+  .vector-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .vector-header h1 {
+    font-size: 16px;
+  }
+  .vector-eyebrow {
+    font-size: 7px;
+    letter-spacing: 1px;
+  }
+  .vector-options {
+    max-width: 220px;
+  }
+  .vector-options button {
+    font-size: 8px;
+    padding: 6px;
+  }
+  .vector-stage {
+    min-height: 460px;
+  }
+  .vector-footer {
+    font-size: 7px;
+    padding: 10px 12px;
+  }
+  .vector-footer > span:nth-child(2) {
+    max-width: 200px;
+    line-height: 1.8;
+    text-align: right;
+  }
+  .vector-telemetry {
+    gap: 14px;
+    font-size: 7px;
+    inset: 13px 15px auto;
+  }
+  .vector-telemetry b {
+    font-size: 12px;
+  }
+  .vector-overlay {
+    padding: 18px;
+  }
+  .vector-brief {
+    padding: 24px 20px;
+  }
+  .vector-brief p {
+    font-size: 11px;
+  }
+  .vector-brief dl > div {
+    grid-template-columns: 105px 1fr;
+  }
+  .vector-loadout {
+    gap: 12px;
+  }
+  .vector-touch {
+    display: flex;
+    bottom: 75px;
+    left: 10px;
+    right: 10px;
+  }
+  .vector-touch button {
+    font-size: 8px;
+    padding: 6px 7px;
+    min-height: 34px;
+  }
+  .vector-preview-type {
+    inset: 30px auto auto 25px;
+  }
+}
+@media (pointer: coarse) {
+  .vector-touch {
+    display: flex;
+  }
+}
+
+.vector-course {
+  position: absolute;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #578c74;
+  pointer-events: none;
+}
+@media (max-width: 650px) {
+  .vector-course {
+    top: 42px;
+    font-size: 8px;
+  }
+}
