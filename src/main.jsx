@@ -15,7 +15,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { AppFrame } from "@purescience/platform-bridge/components/AppFrame";
 import { bridge } from "@purescience/platform-bridge/client";
-import { createRoom, command, advance, isSoloGame } from "./lib/room.mjs";
+import {
+  createRoom,
+  command,
+  advance,
+  isSoloGame,
+  canPlayAlone,
+} from "./lib/room.mjs";
 import { newRace } from "./lib/trails.mjs";
 import { connectRoom } from "./lib/shared.mjs";
 import { Arena, colours } from "./Arena.jsx";
@@ -31,7 +37,7 @@ import "./style.css";
 import "./letters.css";
 const me = { id: "local", name: "You", bot: false };
 const initial = (game = "halloween") =>
-  isSoloGame(game)
+  canPlayAlone(game)
     ? createRoom("Solo session", me, game)
     : command(
         createRoom("Local table", me, game),
@@ -74,7 +80,7 @@ function App() {
     letters = s.game === "letters",
     tether = s.game === "tether",
     noir = s.game === "noir",
-    coop = ["noir", "words", "tether"].includes(s.game),
+    coop = ["noir", "words", "tether", "halloween"].includes(s.game),
     orbit = s.game === "orbit",
     shoot = s.game === "shoot",
     words = s.game === "words",
@@ -351,7 +357,7 @@ function App() {
     }
   }
   const ready =
-    (solo ? s.seats.length === 1 : s.seats.length >= 2) &&
+    (canPlayAlone(s.game) ? s.seats.length >= 1 : s.seats.length >= 2) &&
     s.seats.every((p) => p.bot || peers.has(p.id));
   return (
     <div
@@ -484,9 +490,9 @@ function App() {
                   : {
                       ...v,
                       game,
-                      seats: isSoloGame(game)
+                      seats: canPlayAlone(game)
                         ? [me]
-                        : isSoloGame(v.game)
+                        : canPlayAlone(v.game)
                         ? initial(game).seats
                         : v.seats,
                       arena: "open",
@@ -513,7 +519,8 @@ function App() {
           onPlay={() => {
             setScreen("table");
             if (!remote && s.phase !== "playing") void playNow();
-            else if (!remote && solo && s.paused) action({ type: "resume" });
+            else if (!remote && canPlayAlone(s.game) && s.paused)
+              action({ type: "resume" });
           }}
         />
       ) : remote?.state?.ended ? (
@@ -530,7 +537,22 @@ function App() {
         </div>
       ) : halloween ? (
         <HalloweenArena
-          board={s.board?.kind === "halloween" ? s.board : newHalloween()}
+          board={
+            s.board?.kind === "halloween"
+              ? s.board
+              : newHalloween(Math.max(1, s.seats.length))
+          }
+          seat={s.seats.findIndex((p) => p.id === id)}
+          seats={s.seats}
+          peers={peers}
+          remote={Boolean(remote)}
+          code={code}
+          hostControls={hostControls}
+          connected={connected}
+          ready={ready}
+          onJoin={() => action({ type: "join" })}
+          onInvite={server ? () => showInvite("team") : null}
+          onLobby={() => action({ type: "lobby" })}
           paused={s.paused}
           lobby={s.phase === "lobby"}
           onAction={action}
@@ -1060,6 +1082,11 @@ function App() {
                 : invite === "join"
                 ? " Enter the code shown on your teammate’s game."
                 : " Start a new game or join a teammate."}
+              {halloween &&
+                !remote &&
+                invite === "team" &&
+                s.phase === "playing" &&
+                " This starts a new co-op round."}
             </p>
             {error && (
               <div className="notice" role="alert">
@@ -1076,7 +1103,11 @@ function App() {
             ) : invite === "choose" ? (
               <>
                 <button className="primary" disabled={busy} onClick={robot}>
-                  {coop ? "Play with Game Player" : "Play against Game Player"}
+                  {halloween
+                    ? "Play on my own"
+                    : coop
+                    ? "Play with Game Player"
+                    : "Play against Game Player"}
                 </button>
                 <button
                   className="secondary"

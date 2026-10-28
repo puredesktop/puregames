@@ -1,5 +1,6 @@
 import { newHalloween, stepHalloween, halloweenCommand } from "./halloween.mjs";
-export const isSoloGame = (game) => ["letters", "halloween"].includes(game);
+export const canPlayAlone = (game) => ["letters", "halloween"].includes(game);
+export const isSoloGame = (game) => game === "letters";
 import { newLetters, stepLetters, letterCommand } from "./letters.mjs";
 import { newTether, stepTether, tetherCommand } from "./tether.mjs";
 import { newNoir, stepNoir, noirCommand } from "./noir.mjs";
@@ -80,6 +81,7 @@ export function command(s, actor, action, host, present) {
     next = { ...s, seats: s.seats.filter((p) => p.id !== actor) };
   } else if (
     action.type === "bot" &&
+    s.game !== "halloween" &&
     !isSoloGame(s.game) &&
     admin &&
     s.phase === "lobby" &&
@@ -109,6 +111,7 @@ export function command(s, actor, action, host, present) {
     admin &&
     s.phase === "lobby" &&
     Object.hasOwn(engines, action.game) &&
+    (action.game !== "halloween" || s.seats.every((p) => !p.bot)) &&
     (!isSoloGame(action.game) || (s.seats.length === 1 && !s.seats[0].bot))
   ) {
     next = { ...s, game: action.game, board: null, scores: {}, round: 0 };
@@ -123,9 +126,9 @@ export function command(s, actor, action, host, present) {
     (action.type === "start" || action.type === "rematch") &&
     admin &&
     (s.phase === "lobby" || s.phase === "finished") &&
-    (isSoloGame(s.game)
-      ? s.seats.length === 1 && !s.seats[0].bot
-      : s.seats.length >= 2) &&
+    (canPlayAlone(s.game) ? s.seats.length >= 1 : s.seats.length >= 2) &&
+    (!isSoloGame(s.game) || (s.seats.length === 1 && !s.seats[0].bot)) &&
+    (s.game !== "halloween" || s.seats.every((p) => !p.bot)) &&
     s.seats.every((p) => p.bot || present.has(p.id))
   ) {
     next = {

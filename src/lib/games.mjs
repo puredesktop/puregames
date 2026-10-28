@@ -1,16 +1,15 @@
 export const GAMES = {
   halloween: {
-    name: "Boo, Please!",
-    subtitle: "A very polite Halloween",
-    genre: "Solo · First person · Cosy comedy",
-    tagline: "Big night. Little scares. Terrible jokes.",
-    description:
-      "Trick-or-treat down a tiny street of very friendly monsters. Ring six doorbells, pick a ridiculous reply, and fill your bucket. No fighting, no jump scares. Just a frightfully nice evening.",
-    arenas: { open: "An autumn evening", islands: "An autumn evening" },
-    goal: "6 neighbours · 5 bonus sweets · Zero jump scares",
+    name: "Gourd Street",
+    subtitle: "The lights are still on",
+    genre: "1–4 players · First person · Atmospheric horror",
+    tagline: "Six doors. One way out.",
+    description: "A street that should not exist. Six residents who remember you. Something moving in the fog. Recover the relics, keep it in your light, and find your way out—alone or with up to three friends.",
+    arenas: { open: "After midnight", islands: "After midnight" },
+    goal: "6 relics · 5 lost echoes · Stay together",
     rules: [
-      "W/S or Up/Down walk. Left/Right turn; A/D sidestep. Drag the scene to look around. Shift strolls faster. Get close to a glowing porch and press E or Ring doorbell. P pauses.",
-      "Choose any reply to earn a treat. Visit all six neighbours to finish. Pick up the five glowing sweets along the street for a bonus. Follow the porch compass if you get lost. There is no timer and no wrong answer.",
+      "W/S or Up/Down walk. Left/Right turn; A/D sidestep. Drag to look around. Shift runs. E knocks at a nearby door. P pauses.",
+      "Recover a relic from each of the six residents. The watcher moves when you are not looking: face it with your flashlight to drive it back. Lit porches are safe. If caught, you return to the gate with your relics intact. Everyone shares progress but speaks to residents independently.",
     ],
   },
   letters: {
