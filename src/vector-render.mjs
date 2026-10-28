@@ -1050,7 +1050,10 @@ export function renderVector(
   for (const s of b.shots) {
     const velocity = { x: s.vx, y: s.vy, z: s.vz };
     const age = Math.max(0, clock - (s.born ?? b.time - 1));
-    const head = b.smoothMotion ? s : add(s, mul(velocity, elapsed - 0.1));
+    // Shots move once in their birth tick before the snapshot is published.
+    // Keep that offset even for interpolated frames, so pulses launch at the
+    // barrel instead of first appearing 150m away as tiny foreshortened dashes.
+    const head = add(s, mul(velocity, elapsed - 0.1));
     const trailTime = Math.min(age, s.missile ? 0.26 : s.enemy ? 0.1 : 0.065);
     const tail = sub(head, mul(velocity, trailTime));
     worldLine(
