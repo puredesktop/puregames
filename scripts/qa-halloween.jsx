@@ -124,6 +124,8 @@ function Check() {
           }
           onJoin={() => connection.current.action({ type: "join" })}
           onLobby={() => connection.current.action({ type: "lobby" })}
+          onRemove={(id) => connection.current.action({ type: "remove", id })}
+          onEnd={() => connection.current.action({ type: "end" })}
         />
       )}
     </main>

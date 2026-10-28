@@ -90,6 +90,8 @@ export function HalloweenArena({
   onJoin,
   onInvite,
   onLobby,
+  onRemove,
+  onEnd,
   paused,
   lobby,
   onAction,
@@ -681,6 +683,15 @@ export function HalloweenArena({
                       <small>
                         {peers.has(p.id) ? "Ready" : "Disconnected"}
                       </small>
+                      {lobby && hostControls && i !== seat && onRemove && (
+                        <button
+                          type="button"
+                          aria-label={`Remove ${p.name}`}
+                          onClick={() => onRemove(p.id)}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   ))}
                   {code && (
@@ -688,6 +699,11 @@ export function HalloweenArena({
                       Friends can choose Join game and enter{" "}
                       <strong>{code}</strong> on the same PureServer.
                     </p>
+                  )}
+                  {lobby && hostControls && onEnd && (
+                    <button type="button" onClick={onEnd}>
+                      End game for everyone
+                    </button>
                   )}
                   {lobby && seat < 0 && (
                     <button
