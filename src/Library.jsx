@@ -5,7 +5,7 @@ import { TetherPreview } from "./TetherArena.jsx";
 import { NoirPreview } from "./NoirScene.jsx";
 import React from "react";
 import { WordPreview } from "./WordArena.jsx";
-import { GAMES } from "./lib/games.mjs";
+import { GAMES, AVAILABLE_GAMES } from "./lib/games.mjs";
 import { SkirmishPreview } from "./SkirmishArena.jsx";
 import { OrbitPreview } from "./OrbitArena.jsx";
 
@@ -174,20 +174,9 @@ export function Library({
     >
       <nav className="library-rail" aria-label="Games">
         <div className="library-section-label">
-          Library{" "}
-          <span>{String(Object.keys(GAMES).length).padStart(2, "0")}</span>
+          Library <span>{String(AVAILABLE_GAMES.length).padStart(2, "0")}</span>
         </div>
-        {[
-          "vector",
-          "halloween",
-          "letters",
-          "tether",
-          "noir",
-          "words",
-          "shoot",
-          "orbit",
-          "ribbon",
-        ].map((game) => (
+        {AVAILABLE_GAMES.map((game) => (
           <button
             key={game}
             aria-label={GAMES[game].name}

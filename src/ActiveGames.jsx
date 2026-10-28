@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { bridge } from "@purescience/platform-bridge/client";
-import { GAMES } from "./lib/games.mjs";
+import { GAMES, isAvailableGame } from "./lib/games.mjs";
 
 export function ActiveGames({
   currentPath,
@@ -27,7 +27,7 @@ export function ActiveGames({
             entries.filter(
               (g) =>
                 /^\/Workspace\/Games\/[A-F0-9]{8}\.puregames$/.test(g.path) &&
-                GAMES[g.summary?.game] &&
+                isAvailableGame(g.summary?.game) &&
                 g.summary.status !== "ended"
             )
           );
