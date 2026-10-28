@@ -2,7 +2,7 @@ import { newVector, stepVector } from "./vector-wake.mjs";
 import { newHalloween, stepHalloween, halloweenCommand } from "./halloween.mjs";
 export const canPlayAlone = (game) =>
   ["letters", "halloween", "vector"].includes(game);
-export const isSoloGame = (game) => ["letters", "vector"].includes(game);
+export const isSoloGame = (game) => ["letters"].includes(game);
 import { newLetters, stepLetters, letterCommand } from "./letters.mjs";
 import { newTether, stepTether, tetherCommand } from "./tether.mjs";
 import { newNoir, stepNoir, noirCommand } from "./noir.mjs";
@@ -84,7 +84,7 @@ export function command(s, actor, action, host, present) {
     next = { ...s, seats: s.seats.filter((p) => p.id !== actor) };
   } else if (
     action.type === "bot" &&
-    s.game !== "halloween" &&
+    !["halloween", "vector"].includes(s.game) &&
     !isSoloGame(s.game) &&
     admin &&
     s.phase === "lobby" &&
@@ -114,7 +114,8 @@ export function command(s, actor, action, host, present) {
     admin &&
     s.phase === "lobby" &&
     Object.hasOwn(engines, action.game) &&
-    (action.game !== "halloween" || s.seats.every((p) => !p.bot)) &&
+    (!["halloween", "vector"].includes(action.game) ||
+      s.seats.every((p) => !p.bot)) &&
     (!isSoloGame(action.game) || (s.seats.length === 1 && !s.seats[0].bot))
   ) {
     next = { ...s, game: action.game, board: null, scores: {}, round: 0 };
@@ -131,7 +132,8 @@ export function command(s, actor, action, host, present) {
     (s.phase === "lobby" || s.phase === "finished") &&
     (canPlayAlone(s.game) ? s.seats.length >= 1 : s.seats.length >= 2) &&
     (!isSoloGame(s.game) || (s.seats.length === 1 && !s.seats[0].bot)) &&
-    (s.game !== "halloween" || s.seats.every((p) => !p.bot)) &&
+    (!["halloween", "vector"].includes(s.game) ||
+      s.seats.every((p) => !p.bot)) &&
     s.seats.every((p) => p.bot || present.has(p.id))
   ) {
     next = {

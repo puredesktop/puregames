@@ -2,15 +2,15 @@ export const GAMES = {
   vector: {
     name: "Vector Wake",
     subtitle: "3D vector cockpit combat",
-    genre: "Solo · Cockpit · Vector flight",
+    genre: "1–4 players · Co-op · Vector flight",
     tagline: "The silence ends here.",
     description:
-      "Fly the Vela-9 through a sky of luminous wireframe ships. Break three hostile sectors, dodge incoming fire and silence the Lattice Ark. Original spacecraft. Pure line art.",
+      "Fly solo or form a four-pilot wing through a sky of luminous wireframe ships. Break three hostile sectors, dodge incoming fire and silence the Lattice Ark. Original spacecraft. Pure line art.",
     arenas: { open: "Cadet", islands: "Veteran" },
     goal: "3 sectors · Twin cannons · Lock-on seekers",
     rules: [
-      "Arrow keys or WASD steer your nose; optional Mouse flight is off by default. Click or hold Space to fire. Hold Shift to boost, X to brake, Q/E to bank, Z/C to evade-roll. R launches a seeker after the lock ring fills. P or Escape pauses.",
-      "Fighters dive and cross your nose. Break away from incoming volleys, chase quick kills for chain bonuses, and clear all three sectors to destroy the Lattice Ark. Release fire to cool the cannons. Shields recharge after seven seconds without damage. Each sector restores shields and two seekers. Collect cyan shield cells from wrecks to restore shield and boost. Avoid red bolts and debris; follow the contact arrow to find ships behind you.",
+      "Arrow keys or WASD steer your nose; optional Mouse flight is off by default. Click or hold Space to fire. Hold Shift to boost, X to brake, Q/E to bank, Z/C to evade-roll. R launches a seeker after the lock ring fills. P or Escape pauses. Pitch through full loops. Invite up to three teammates through PureServer; each has a separate cockpit. Radar range cycles between 800m, 1600m and 3200m.",
+      "Fighters dive and cross your nose. Break away from incoming volleys, chase quick kills for chain bonuses, and clear all three sectors to destroy the Lattice Ark. Release fire to cool the cannons. Shields recharge after seven seconds without damage. Each sector restores shields and two seekers. Collect cyan shield cells from wrecks to restore shield and boost. Avoid red bolts and debris; follow the radar and contact arrow to find ships behind you. Wingmates cannot damage each other. A downed pilot returns after eight seconds if a wingmate survives; losing the entire wing ends the mission.",
     ],
   },
   halloween: {

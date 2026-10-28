@@ -67,23 +67,26 @@ export const SHIPS = {
 };
 export const WAVES = ["Hot perimeter", "Broken formation", "The lattice wakes"];
 export function spawnWave(b) {
-  const { f, r, u } = axes(b.players[0]);
-  b.scenery = add(
-    b.players[0],
-    add(mul(f, 4500), add(mul(r, -2100), mul(u, 600)))
-  );
+  const anchor = b.players.find((p) => p.alive) || b.players[0];
+  const { f, r, u } = axes(anchor);
+  b.scenery = add(anchor, add(mul(f, 4500), add(mul(r, -2100), mul(u, 600))));
   const types =
     b.wave === 1
       ? ["spindle", "spindle", "prism", "spindle"]
       : b.wave === 2
       ? ["rake", "prism", "spindle", "rake", "prism", "spindle"]
       : ["ark", "rake", "prism", "rake", "spindle", "prism"];
+  types.push(
+    ...Array.from({ length: (b.players.length - 1) * 2 }, (_, i) =>
+      i % 2 ? "rake" : "spindle"
+    )
+  );
   b.enemies = types.map((type, i) => ({
     id: `w${b.wave}-${i}`,
     type,
     ...SHIPS[type],
     ...add(
-      b.players[0],
+      anchor,
       add(
         mul(f, type === "ark" ? 850 : 350 + i * 85),
         add(
@@ -102,18 +105,97 @@ export function spawnWave(b) {
   }));
   b.bannerUntil = b.time + 3.5;
 }
-export function newVector(_count = 1, arena = "open") {
+const pilotFields = [
+  "lock",
+  "lockTime",
+  "fired",
+  "hits",
+  "fireAt",
+  "missileAt",
+  "damageAt",
+  "hitAt",
+  "nearAt",
+  "overheated",
+  "cellAt",
+];
+const pilotDefaults = {
+  lock: null,
+  lockTime: 0,
+  fired: 0,
+  hits: 0,
+  fireAt: 0,
+  missileAt: -10,
+  damageAt: -10,
+  hitAt: -10,
+  nearAt: -10,
+  overheated: false,
+  cellAt: -10,
+};
+export const PILOT_COLOURS = ["#69eaff", "#b3a2ff", "#ffcb74", "#ff97ce"];
+// A cockpit is a projection of the shared world, never a second simulation.
+export function vectorView(board, seat = 0) {
+  const index = Math.max(0, Math.min(board.players.length - 1, seat));
+  const pilot = board.players[index];
+  return {
+    ...board,
+    ...Object.fromEntries(
+      pilotFields.map((key) => [
+        key,
+        Object.hasOwn(pilot, key)
+          ? pilot[key]
+          : index === 0
+          ? board[key] ?? pilotDefaults[key]
+          : pilotDefaults[key],
+      ])
+    ),
+    players: [pilot],
+    pilotIndex: index,
+    wingmates: board.players
+      .map((p, i) => ({ ...p, index: i, colour: PILOT_COLOURS[i] }))
+      .filter((p) => p.index !== index),
+    teamScore: board.players.reduce((n, p) => n + p.score, 0),
+  };
+}
+function syncPilotZero(b) {
+  for (const key of pilotFields) b[key] = b.players[0][key];
+}
+function recoverPilot(p, anchor, index, time) {
+  const { r, f } = axes(anchor);
+  Object.assign(
+    p,
+    add(anchor, add(mul(r, (index % 2 ? 1 : -1) * 100), mul(f, -65))),
+    {
+      yaw: anchor.yaw,
+      pitch: anchor.pitch,
+      roll: 0,
+      hull: 100,
+      shield: 75,
+      energy: 100,
+      heat: 0,
+      alive: true,
+      respawnAt: 0,
+      invulnerableUntil: time + 2,
+      damageAt: time,
+      lock: null,
+      lockTime: 0,
+      overheated: false,
+    }
+  );
+}
+export function newVector(count = 1, arena = "open") {
   const b = {
     kind: "vector",
     tick: 0,
     time: 0,
     wave: 1,
     arena,
-    players: [
-      {
-        x: 0,
-        y: 0,
-        z: 0,
+    players: Array.from(
+      { length: clamp(Math.trunc(count) || 1, 1, 4) },
+      (_, i) => ({
+        ...pilotDefaults,
+        x: i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 100,
+        y: i === 3 ? 45 : 0,
+        z: i === 0 ? 0 : -65,
         yaw: 0,
         pitch: 0,
         roll: 0,
@@ -127,8 +209,10 @@ export function newVector(_count = 1, arena = "open") {
         score: 0,
         evadeAt: -10,
         evadeSide: 1,
-      },
-    ],
+        respawnAt: 0,
+        invulnerableUntil: 0,
+      })
+    ),
     enemies: [],
     shots: [],
     effects: [],
@@ -158,6 +242,7 @@ export function newVector(_count = 1, arena = "open") {
     noticeUntil: 5,
   };
   spawnWave(b);
+  syncPilotZero(b);
   return b;
 }
 export function targetFor(b, p = b.players[0]) {
@@ -197,23 +282,22 @@ function effect(b, pos, kind = "burst", colour = "#b8ff65") {
     until: b.time + (kind === "burst" ? 1.6 : 0.45),
   });
 }
-function damage(b, amount) {
+function damage(b, amount, p) {
   // One shield response per volley, rather than simultaneous bolts double-hitting.
   if (
-    b.time - b.damageAt < 0.25 ||
-    b.time - (b.players[0].evadeAt ?? -10) < 0.65
+    b.time < (p.invulnerableUntil || 0) ||
+    b.time - p.damageAt < 0.25 ||
+    b.time - (p.evadeAt ?? -10) < 0.65
   )
     return;
-  const p = b.players[0],
-    shield = Math.min(p.shield, amount);
+  const shield = Math.min(p.shield, amount);
   p.shield -= shield;
   p.hull = Math.max(0, p.hull - (amount - shield));
-  b.damageAt = b.time;
+  p.damageAt = b.time;
   if (p.hull <= 0) {
     p.alive = false;
-    b.done = true;
-    b.winners = [];
-    b.notice = "Signal lost";
+    p.respawnAt = b.time + 8;
+    effect(b, p, "burst", "#69eaff");
   }
 }
 export function rocksNear(p) {
@@ -229,7 +313,15 @@ export function rocksNear(p) {
     };
   });
 }
-function shoot(b, p, dir, enemy = false, owner = "pilot", missile = false) {
+function shoot(
+  b,
+  p,
+  dir,
+  enemy = false,
+  owner = 0,
+  missile = false,
+  target = null
+) {
   const speed = missile ? 440 : enemy ? 310 : 1500;
   b.shots.push({
     x: p.x,
@@ -245,95 +337,122 @@ function shoot(b, p, dir, enemy = false, owner = "pilot", missile = false) {
     owner,
     missile,
     until: b.time + (enemy ? 7 : missile ? 6 : 1.7),
-    target: missile ? b.lock : null,
+    target,
   });
 }
 export function stepVector(state, inputs = {}) {
   if (state.done) return state;
   const b = structuredClone(state),
-    p = b.players[0],
-    raw = inputs[0] || {},
     dt = 0.1;
+  // Older solo checkpoints stored cockpit telemetry on the board.
+  b.players.forEach((p, i) => {
+    for (const key of pilotFields)
+      p[key] =
+        i === 0
+          ? state[key] ?? p[key] ?? pilotDefaults[key]
+          : p[key] ?? pilotDefaults[key];
+  });
   b.time = Math.round((b.time + dt) * 10) / 10;
   b.tick++;
-  const turn = finite(raw.turn),
-    pitch = finite(raw.pitch);
-  p.yaw = Math.atan2(
-    Math.sin(p.yaw + turn * 0.13),
-    Math.cos(p.yaw + turn * 0.13)
-  );
-  p.pitch = clamp(p.pitch + pitch * 0.105, -1.4, 1.4);
-  p.roll +=
-    (clamp(-turn * 0.85 + finite(raw.bank) * 1.1, -1, 1) - p.roll) * 0.24;
-  const boosting = raw.boost === true && p.energy > 3 && !raw.brake;
-  const goal = boosting ? 420 : raw.brake === true ? 55 : 145;
-  p.speed += (goal - p.speed) * 0.16;
-  p.energy = clamp(p.energy + (boosting ? -3 : 1.5), 0, 100);
-  const { f, r, u } = axes(p);
-  const dodge = finite(raw.dodge);
-  if (
-    Math.abs(dodge) > 0.5 &&
-    b.time - (p.evadeAt ?? -10) >= 3.5 &&
-    p.energy >= 18
-  ) {
-    p.evadeAt = b.time;
-    p.evadeSide = Math.sign(dodge);
-    p.energy -= 18;
-  }
-  const evading = b.time - (p.evadeAt ?? -10);
-  const slide =
-    evading >= 0 && evading < 0.65
-      ? mul(r, Math.sin((evading / 0.65) * Math.PI) * 420 * p.evadeSide * dt)
-      : { x: 0, y: 0, z: 0 };
-  Object.assign(p, add(p, add(mul(f, p.speed * dt), slide)));
-  p.heat = Math.max(0, p.heat - 2.7);
-  if (p.heat < 25) b.overheated = false;
-  if (b.time - b.damageAt > 7) p.shield = Math.min(100, p.shield + 0.6);
-  const nearest = targetFor(b),
-    lockable = nearest && nearest.angle < 0.16 && nearest.distance < 1400;
-  const wanted = lockable ? nearest.enemy.id : null;
-  b.lockTime = wanted && wanted === b.lock ? Math.min(1.3, b.lockTime + dt) : 0;
-  b.lock = wanted;
-  if (raw.fire === true && b.time >= b.fireAt && !b.overheated) {
-    let dir = f;
-    if (nearest && nearest.angle < 0.065 && nearest.distance < 1200) {
-      const e = nearest.enemy,
-        lead = nearest.distance / 1500;
-      dir = unit(
-        sub(add(e, { x: e.vx * lead, y: e.vy * lead, z: e.vz * lead }), p)
-      );
+  for (let index = 0; index < b.players.length; index++) {
+    const p = b.players[index],
+      raw = inputs[index] || {};
+    if (!p.alive) {
+      const anchor = b.players.find((other) => other.alive);
+      if (anchor && b.time >= p.respawnAt)
+        recoverPilot(p, anchor, index, b.time);
+      else continue;
     }
-    for (const side of [-1, 1]) {
-      const cr = Math.cos(p.roll + evasionAngle(p, b.time)),
-        sr = Math.sin(p.roll + evasionAngle(p, b.time));
-      const gunRight = add(mul(r, cr), mul(u, sr));
-      const gunUp = add(mul(u, cr), mul(r, -sr));
-      const muzzle = add(
-        p,
-        add(mul(f, 14), add(mul(gunRight, side * 3.8), mul(gunUp, -4.4)))
-      );
-      shoot(
-        b,
-        muzzle,
-        unit(sub(add(p, mul(dir, nearest?.distance || 900)), muzzle))
-      );
+    const turn = finite(raw.turn),
+      pitch = finite(raw.pitch);
+    p.yaw = Math.atan2(
+      Math.sin(p.yaw + turn * 0.13),
+      Math.cos(p.yaw + turn * 0.13)
+    );
+    p.pitch = Math.atan2(
+      Math.sin(p.pitch + pitch * 0.105),
+      Math.cos(p.pitch + pitch * 0.105)
+    );
+    p.roll +=
+      (clamp(-turn * 0.85 + finite(raw.bank) * 1.1, -1, 1) - p.roll) * 0.24;
+    const boosting = raw.boost === true && p.energy > 3 && !raw.brake;
+    const goal = boosting ? 420 : raw.brake === true ? 55 : 145;
+    p.speed += (goal - p.speed) * 0.16;
+    p.energy = clamp(p.energy + (boosting ? -3 : 1.5), 0, 100);
+    const { f, r, u } = axes(p);
+    const dodge = finite(raw.dodge);
+    if (
+      Math.abs(dodge) > 0.5 &&
+      b.time - (p.evadeAt ?? -10) >= 3.5 &&
+      p.energy >= 18
+    ) {
+      p.evadeAt = b.time;
+      p.evadeSide = Math.sign(dodge);
+      p.energy -= 18;
     }
-    p.heat = Math.min(100, p.heat + 12);
-    b.fired += 2;
-    b.fireAt = b.time + 0.19;
-    if (p.heat >= 97) b.overheated = true;
-  }
-  if (
-    raw.missile === true &&
-    p.missiles > 0 &&
-    b.time - b.missileAt > 1 &&
-    b.lockTime >= 1.1
-  ) {
-    shoot(b, add(p, mul(f, 6)), f, false, "pilot", true);
-    p.missiles--;
-    b.missileAt = b.time;
+    const evading = b.time - (p.evadeAt ?? -10);
+    const slide =
+      evading >= 0 && evading < 0.65
+        ? mul(r, Math.sin((evading / 0.65) * Math.PI) * 420 * p.evadeSide * dt)
+        : { x: 0, y: 0, z: 0 };
+    Object.assign(p, add(p, add(mul(f, p.speed * dt), slide)));
+    p.heat = Math.max(0, p.heat - 2.7);
+    if (p.heat < 25) p.overheated = false;
+    if (b.time - p.damageAt > 7) p.shield = Math.min(100, p.shield + 0.6);
+    const nearest = targetFor(b, p),
+      lockable = nearest && nearest.angle < 0.16 && nearest.distance < 1400;
+    const wanted = lockable ? nearest.enemy.id : null;
+    p.lockTime =
+      wanted && wanted === p.lock ? Math.min(1.3, p.lockTime + dt) : 0;
+    p.lock = wanted;
+    if (raw.fire === true && b.time >= p.fireAt && !p.overheated) {
+      let dir = f;
+      if (nearest && nearest.angle < 0.065 && nearest.distance < 1200) {
+        const e = nearest.enemy,
+          lead = nearest.distance / 1500;
+        dir = unit(
+          sub(add(e, { x: e.vx * lead, y: e.vy * lead, z: e.vz * lead }), p)
+        );
+      }
+      for (const side of [-1, 1]) {
+        const cr = Math.cos(p.roll + evasionAngle(p, b.time)),
+          sr = Math.sin(p.roll + evasionAngle(p, b.time));
+        const gunRight = add(mul(r, cr), mul(u, sr));
+        const gunUp = add(mul(u, cr), mul(r, -sr));
+        const muzzle = add(
+          p,
+          add(mul(f, 14), add(mul(gunRight, side * 3.8), mul(gunUp, -4.4)))
+        );
+        shoot(
+          b,
+          muzzle,
+          unit(sub(add(p, mul(dir, nearest?.distance || 900)), muzzle)),
+          false,
+          index
+        );
+      }
+      p.heat = Math.min(100, p.heat + 12);
+      p.fired += 2;
+      p.fireAt = b.time + 0.19;
+      if (p.heat >= 97) p.overheated = true;
+    }
+    if (
+      raw.missile === true &&
+      p.missiles > 0 &&
+      b.time - p.missileAt > 1 &&
+      p.lockTime >= 1.1
+    ) {
+      shoot(b, add(p, mul(f, 6)), f, false, index, true, p.lock);
+      p.missiles--;
+      p.missileAt = b.time;
+    }
   }
   for (const e of b.enemies) {
+    const p = b.players
+      .filter((p) => p.alive)
+      .sort((a, c) => length(sub(a, e)) - length(sub(c, e)))[0];
+    if (!p) break;
+    const { f, r, u } = axes(p);
     const delta = sub(p, e),
       dist = length(delta),
       direction = unit(delta);
@@ -389,8 +508,8 @@ export function stepVector(state, inputs = {}) {
         (e.type === "ark" ? 0.85 : 2.6) +
         (b.arena === "islands" ? -0.6 : 0.6);
     }
-    if (dist < e.radius + 8 && b.time - b.damageAt > 1.3) {
-      damage(b, 18);
+    if (dist < e.radius + 8 && b.time - p.damageAt > 1.3) {
+      damage(b, 18, p);
       effect(b, p, "impact", "#ff6a68");
     }
   }
@@ -409,17 +528,27 @@ export function stepVector(state, inputs = {}) {
     const old = { x: s.x, y: s.y, z: s.z };
     Object.assign(s, add(s, mul({ x: s.vx, y: s.vy, z: s.vz }, dt)));
     if (s.enemy) {
-      if (segmentDistance(old, s, p) < 10) {
-        damage(b, b.arena === "islands" ? 8 : 6);
-        effect(b, p, "impact", "#ff6a68");
+      const hit = b.players
+        .filter((p) => p.alive && segmentDistance(old, s, p) < 10)
+        .sort((a, c) => length(sub(a, old)) - length(sub(c, old)))[0];
+      if (hit) {
+        damage(b, b.arena === "islands" ? 8 : 6, hit);
+        effect(b, hit, "impact", "#ff6a68");
         return false;
       }
-      if (!s.near && segmentDistance(old, s, p) < 45) {
-        s.near = true;
-        b.nearAt = b.time;
-        b.nearMisses++;
-        p.score += 15;
-      }
+      s.nearPlayers ||= [];
+      b.players.forEach((p, index) => {
+        if (
+          p.alive &&
+          !s.nearPlayers.includes(index) &&
+          segmentDistance(old, s, p) < 45
+        ) {
+          s.nearPlayers.push(index);
+          p.nearAt = b.time;
+          b.nearMisses++;
+          p.score += 15;
+        }
+      });
     } else {
       const candidates = b.enemies
         .filter((e) => !dead.has(e.id) && segmentDistance(old, s, e) < e.radius)
@@ -427,8 +556,9 @@ export function stepVector(state, inputs = {}) {
       const e = candidates[0];
       if (e) {
         e.hp -= s.missile ? 135 : 20;
-        b.hits++;
-        b.hitAt = b.time;
+        const owner = b.players[Number.isInteger(s.owner) ? s.owner : 0];
+        owner.hits++;
+        owner.hitAt = b.time;
         effect(b, e, "spark", e.colour);
         if (e.hp <= 0) {
           dead.add(e.id);
@@ -436,7 +566,7 @@ export function stepVector(state, inputs = {}) {
           b.chain = b.time - b.killAt < 3 ? Math.min(4, b.chain + 1) : 1;
           b.killAt = b.time;
           e.reward = e.points * b.chain;
-          p.score += e.reward;
+          owner.score += e.reward;
           b.pickups ||= [];
           b.pickups.push({
             id: b.nextId++,
@@ -459,18 +589,24 @@ export function stepVector(state, inputs = {}) {
     return true;
   });
   b.enemies = b.enemies.filter((e) => !dead.has(e.id));
-  if (b.time > 4 && b.time - b.damageAt > 1.5) {
-    const rock = rocksNear(p).find(
-      (r) => length(sub(r, p)) < r.radius * 0.65 + 6
-    );
-    if (rock) {
-      damage(b, 22);
-      effect(b, p, "impact", "#ffb84a");
-      b.notice = "Debris impact — break away";
-      b.noticeUntil = b.time + 2;
+  for (const p of b.players) {
+    if (p.alive && b.time > 4 && b.time - p.damageAt > 1.5) {
+      const rock = rocksNear(p).find(
+        (r) => length(sub(r, p)) < r.radius * 0.65 + 6
+      );
+      if (rock) {
+        damage(b, 22, p);
+        effect(b, p, "impact", "#ffb84a");
+        b.notice = "Debris impact — break away";
+        b.noticeUntil = b.time + 2;
+      }
     }
   }
   b.pickups = (b.pickups || []).filter((cell) => {
+    const p = b.players
+      .filter((p) => p.alive)
+      .sort((a, c) => length(sub(a, cell)) - length(sub(c, cell)))[0];
+    if (!p) return cell.until > b.time;
     if (cell.until <= b.time) return false;
     const delta = sub(p, cell),
       distance = length(delta);
@@ -484,7 +620,7 @@ export function stepVector(state, inputs = {}) {
       p.energy = Math.min(100, p.energy + 30);
       p.score += 50;
       b.cells = (b.cells || 0) + 1;
-      b.cellAt = b.time;
+      p.cellAt = b.time;
       return false;
     }
     return true;
@@ -493,8 +629,12 @@ export function stepVector(state, inputs = {}) {
   if (!b.enemies.length && !b.done) {
     if (!b.nextWave) {
       b.nextWave = b.time + 2;
-      p.shield = Math.min(100, p.shield + 35);
-      p.missiles = Math.min(6, p.missiles + 2);
+      const anchor = b.players.find((p) => p.alive);
+      b.players.forEach((p, i) => {
+        if (!p.alive && anchor) recoverPilot(p, anchor, i, b.time);
+        p.shield = Math.min(100, p.shield + 35);
+        p.missiles = Math.min(6, p.missiles + 2);
+      });
       b.notice = "Sector clear. Shields restored. Next contact incoming.";
       b.noticeUntil = b.time + 2;
     }
@@ -502,8 +642,10 @@ export function stepVector(state, inputs = {}) {
       if (b.wave >= 3) {
         b.done = true;
         b.victory = true;
-        b.winners = [0];
-        p.score += Math.max(0, Math.round(1500 - b.time * 2));
+        b.winners = b.players.map((_, i) => i);
+        b.players.forEach((p) => {
+          p.score += Math.max(0, Math.round(1500 - b.time * 2));
+        });
       } else {
         b.wave++;
         b.nextWave = 0;
@@ -511,9 +653,16 @@ export function stepVector(state, inputs = {}) {
       }
     }
   }
+  if (!b.players.some((p) => p.alive)) {
+    b.done = true;
+    b.victory = false;
+    b.winners = [];
+    b.notice = "Wing signal lost";
+  }
   if (b.time > 600 && !b.done) {
     b.done = true;
     b.notice = "Flight window closed";
   }
+  syncPilotZero(b);
   return b;
 }

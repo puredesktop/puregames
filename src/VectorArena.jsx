@@ -1,6 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { newVector, WAVES, clamp } from "./lib/vector-wake.mjs";
+import {
+  newVector,
+  WAVES,
+  clamp,
+  vectorView,
+  PILOT_COLOURS,
+} from "./lib/vector-wake.mjs";
 import { renderVector } from "./vector-render.mjs";
+import { createVectorMotion } from "./lib/vector-motion.mjs";
 import { createFlightAudio } from "./vector-audio.mjs";
 import "./vector.css";
 
@@ -9,13 +16,14 @@ function FlightCanvas({
   preview = false,
   paused = false,
   glow = true,
+  radarRange = 1600,
   onPointer,
   onFire,
   onFocus,
 }) {
   const canvas = useRef(null),
-    state = useRef({ board, paused });
-  state.current = { board, paused };
+    state = useRef({ board, paused, radarRange });
+  state.current = { board, paused, radarRange };
   useEffect(() => {
     const node = canvas.current,
       c = node.getContext("2d");
@@ -23,9 +31,7 @@ function FlightCanvas({
     let raf,
       disposed = false,
       visible = true,
-      last = board,
-      previous = board.players[0],
-      changed = performance.now(),
+      motion = createVectorMotion(),
       width = 0,
       height = 0;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,39 +55,18 @@ function FlightCanvas({
       if (disposed) return;
       const b = state.current.board;
       if (visible && width > 0) {
-        if (last !== b) {
-          previous = last.players[0];
-          last = b;
-          changed = time;
-        }
-        const p = b.players[0],
-          blend = state.current.paused
-            ? 1
-            : clamp((time - changed) / 100, 0, 1),
-          angle = (a, z) =>
-            a + Math.atan2(Math.sin(z - a), Math.cos(z - a)) * blend;
-        const view = {
-          ...p,
-          x: previous.x + (p.x - previous.x) * blend,
-          y: previous.y + (p.y - previous.y) * blend,
-          z: previous.z + (p.z - previous.z) * blend,
-          yaw: angle(previous.yaw, p.yaw),
-          pitch: previous.pitch + (p.pitch - previous.pitch) * blend,
-          roll: previous.roll + (p.roll - previous.roll) * blend,
-        };
+        const frame = motion.sample(b, time, state.current.paused || preview);
+        const view = { ...frame.players[0] };
         if (preview) {
           view.yaw = Math.sin(reduced ? 0 : time * 0.00012) * 0.14;
           view.pitch = -0.03;
         }
-        renderVector(c, b, width, height, time, {
+        renderVector(c, frame, width, height, time, {
           preview,
           view,
           reduced,
           glow,
-          elapsed:
-            state.current.paused || preview || b.done
-              ? 0
-              : clamp((time - changed) / 1000, 0, 0.1),
+          radarRange: state.current.radarRange,
         });
       }
       raf = requestAnimationFrame(draw);
@@ -156,7 +141,17 @@ export function VectorPreview() {
   );
 }
 export function VectorArena({
-  board,
+  board: world,
+  seat = 0,
+  seats = [],
+  peers = new Map(),
+  remote = false,
+  code = "",
+  connected = true,
+  hostControls = true,
+  ready = true,
+  onInvite,
+  onRemove,
   lobby,
   paused,
   onSteer,
@@ -164,6 +159,7 @@ export function VectorArena({
   onPlay,
   onLobby,
 }) {
+  const board = vectorView(world, seat);
   const stage = useRef(null),
     keys = useRef(new Set()),
     taps = useRef({}),
@@ -176,8 +172,15 @@ export function VectorArena({
     [help, setHelp] = useState(false),
     [sound, setSound] = useState(false),
     [mouse, setMouse] = useState(false),
-    [glow, setGlow] = useState(true);
-  const active = !lobby && !paused && !board.done;
+    [glow, setGlow] = useState(true),
+    [radarRange, setRadarRange] = useState(1600);
+  const active =
+    connected &&
+    seat >= 0 &&
+    board.players[0].alive &&
+    !lobby &&
+    !paused &&
+    !board.done;
   callbacks.current = { onSteer, onPause };
   useEffect(() => {
     if (active) stage.current?.focus({ preventScroll: true });
@@ -380,6 +383,15 @@ export function VectorArena({
           <button onClick={() => setMouse(!mouse)} aria-pressed={mouse}>
             Mouse {mouse ? "on" : "off"}
           </button>
+          <button
+            onClick={() =>
+              setRadarRange((v) => (v === 800 ? 1600 : v === 1600 ? 3200 : 800))
+            }
+            aria-label={`Radar range ${radarRange} metres. Change range`}
+          >
+            Radar{" "}
+            {radarRange < 1000 ? `${radarRange}m` : `${radarRange / 1000}km`}
+          </button>
           <button onClick={toggleSound} aria-pressed={sound}>
             Sound {sound ? "on" : "off"}
           </button>
@@ -395,10 +407,75 @@ export function VectorArena({
             Flight manual
           </button>
           {!lobby && !board.done && (
-            <button onClick={onPause}>{paused ? "Resume" : "Pause"}</button>
+            <button
+              disabled={!connected || (paused && !hostControls) || seat < 0}
+              onClick={onPause}
+            >
+              {paused ? "Resume" : "Pause"}
+            </button>
           )}
         </div>
       </header>
+      <div className="vector-wing" aria-label="Flight wing">
+        <div className="vector-wing-roster">
+          {seats.map((pilot, i) => (
+            <div
+              key={pilot.id}
+              className="vector-wing-pilot"
+              style={{ "--pilot-colour": PILOT_COLOURS[i] }}
+            >
+              <i aria-hidden="true" />
+              <strong>
+                {pilot.name}
+                {i === seat ? " (you)" : ""}
+              </strong>
+              <span>
+                {!peers.has(pilot.id)
+                  ? "Disconnected"
+                  : lobby
+                  ? "Ready"
+                  : !world.players[i]?.alive
+                  ? board.done
+                    ? "Down"
+                    : "Recovering"
+                  : `Hull ${Math.ceil(world.players[i].hull)}% · ${
+                      world.players[i].score
+                    } pts`}
+              </span>
+              {lobby && hostControls && i !== seat && (
+                <button
+                  onClick={() => onRemove?.(pilot.id)}
+                  aria-label={`Remove ${pilot.name}`}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          ))}
+          {seat < 0 && (
+            <span>Spectating · Join the next flight from the briefing</span>
+          )}
+        </div>
+        <div className="vector-wing-actions">
+          {remote && <span>WING {code}</span>}
+          {onInvite && (
+            <button
+              disabled={!lobby || seats.length >= 4 || !connected}
+              onClick={onInvite}
+            >
+              Invite wingmates
+            </button>
+          )}
+          {!onInvite && !remote && (
+            <span>Connect to PureServer to invite wingmates</span>
+          )}
+          {!lobby && hostControls && (
+            <button disabled={!connected} onClick={onLobby}>
+              Flight briefing
+            </button>
+          )}
+        </div>
+      </div>
       <div
         ref={stage}
         className="vector-stage"
@@ -411,6 +488,7 @@ export function VectorArena({
           board={board}
           paused={!active}
           glow={glow}
+          radarRange={radarRange}
           onPointer={(v) => {
             pointer.current = v;
           }}
@@ -439,6 +517,12 @@ export function VectorArena({
             {String(Math.floor(board.time % 60)).padStart(2, "0")} FLIGHT
           </span>
         </div>
+        {!lobby && !board.done && !p.alive && !paused && (
+          <div className="vector-recovery" role="status">
+            Rescue link active · Returning to your wing in{" "}
+            {Math.max(0, Math.ceil(p.respawnAt - board.time))}s
+          </div>
+        )}
         {(lobby || paused || board.done || help) && (
           <div className="vector-overlay">
             <div className="vector-brief">
@@ -499,7 +583,9 @@ export function VectorArena({
                   <p>
                     Follow the contact arrow when ships leave your view. Dodge
                     red bolts and debris. Shields recharge after seven seconds
-                    without damage; each cleared sector restores shields and two
+                    without damage. Pitch is unrestricted: hold Up or W to loop.
+                    Cyan diamonds on the radar are wingmates; short stems show
+                    altitude. Each cleared sector restores shields and two
                     seekers. Collect cyan shield cells from wrecks to recover
                     shield and boost. Chain quick kills for score multipliers.
                   </p>
@@ -513,13 +599,13 @@ export function VectorArena({
                   </p>
                   <div className="vector-results">
                     <span>
-                      <b>{p.score.toLocaleString()}</b> SCORE
+                      <b>{board.teamScore.toLocaleString()}</b> WING SCORE
                     </span>
                     <span>
                       <b>{board.kills}</b> TARGETS
                     </span>
                     <span>
-                      <b>{accuracy}%</b> ACCURACY
+                      <b>{accuracy}%</b> YOUR ACCURACY
                     </span>
                   </div>
                 </>
@@ -528,12 +614,17 @@ export function VectorArena({
                   <p>
                     A derelict navigation lattice has come alive. Launch your
                     Vela-9, clear three hostile sectors, and stop the Lattice
-                    Ark.
+                    Ark. Invite up to three wingmates from the briefing. No
+                    friendly fire; keep one pilot alive to recover downed
+                    teammates.
                   </p>
                   <div className="vector-loadout">
                     <span>02 PULSE CANNONS</span>
                     <span>04 SEEKERS</span>
-                    <span>01 PILOT</span>
+                    <span>
+                      {String(Math.max(1, seats.length)).padStart(2, "0")}{" "}
+                      {seats.length > 1 ? "PILOTS" : "PILOT"}
+                    </span>
                   </div>
                   <p className="vector-hint">
                     Arrows or WASD to steer · Click or Space to fire · Shift to
@@ -541,11 +632,24 @@ export function VectorArena({
                   </p>
                 </>
               ) : (
-                <p>Your ship is safe while paused. Resume when ready.</p>
+                <p>
+                  {!connected
+                    ? "Flight paused while reconnecting. Your seat and mission are retained."
+                    : hostControls
+                    ? "Your wing is safe while paused. Resume when everyone is connected."
+                    : "Your wing is paused. Waiting for the wing leader to resume."}
+                </p>
               )}
               <div className="vector-brief-actions">
                 <button
                   className="vector-launch"
+                  disabled={
+                    !help &&
+                    (!connected ||
+                      seat < 0 ||
+                      !hostControls ||
+                      (lobby && !ready))
+                  }
                   onClick={() => {
                     setHelp(false);
                     pointer.current = null;
@@ -559,7 +663,9 @@ export function VectorArena({
                       ? "Launch flight"
                       : "Back to flight"
                     : lobby
-                    ? "Launch flight"
+                    ? hostControls
+                      ? "Launch flight"
+                      : "Waiting for wing leader"
                     : board.done
                     ? "Fly again"
                     : "Resume flight"}{" "}

@@ -1,3 +1,4 @@
+import { radarContacts } from "./lib/vector-radar.mjs";
 import {
   axes,
   add,
@@ -40,6 +41,34 @@ function mesh(points, faces, extra = []) {
 }
 // Each hull is original geometry: a three-spar needle, faceted cutter, asymmetric rake and pentagonal lattice carrier.
 export const MESHES = {
+  vela: mesh(
+    [
+      [0, 0, -24],
+      [-6, -3, 1],
+      [6, -3, 1],
+      [0, 5, 6],
+      [0, 0, 18],
+      [-27, -2, 16],
+      [27, -2, 16],
+      [-19, -2, 5],
+      [19, -2, 5],
+      [-8, 0, 16],
+      [8, 0, 16],
+    ],
+    [
+      [0, 1, 3],
+      [0, 3, 2],
+      [1, 2, 4],
+      [1, 5, 7],
+      [2, 8, 6],
+      [3, 4, 9],
+      [3, 10, 4],
+    ],
+    [
+      [5, 9],
+      [6, 10],
+    ]
+  ),
   spindle: mesh(
     [
       [0, 0, -20],
@@ -369,7 +398,7 @@ function bar(c, x, y, value, colour, width = 116) {
     c.fillRect(x + i * (width / 10), y, width / 10 - 3, 4);
   }
 }
-function cockpit(c, b, p, cam, w, h, time, reduced) {
+function cockpit(c, b, p, cam, w, h, time, reduced, radarRange) {
   const cyan = "#55dfc5",
     dim = "#194c45",
     soft = "#357f72",
@@ -540,28 +569,120 @@ function cockpit(c, b, p, cam, w, h, time, reduced) {
       11
     );
   }
-  // Radar: camera-relative, forward at top. Behind contacts remain visible.
-  const radius = Math.min(52, w * 0.07),
+  // Tactical scope: distinct silhouettes, altitude stems and locked-contact brackets.
+  const radius = Math.min(76, w * 0.12),
     rx = cx,
-    ry = h - radius - 17;
-  c.strokeStyle = soft;
+    ry = h - radius - 23;
+  c.fillStyle = "#03130f";
   c.beginPath();
   c.arc(rx, ry, radius, 0, TAU);
-  c.stroke();
-  c.strokeStyle = dim;
-  c.beginPath();
-  c.arc(rx, ry, radius * 0.52, 0, TAU);
-  c.moveTo(rx - radius, ry);
-  c.lineTo(rx + radius, ry);
-  c.moveTo(rx, ry - radius);
-  c.lineTo(rx, ry + radius);
-  c.stroke();
-  for (const e of b.enemies) {
-    const v = viewPoint(e, cam),
-      d = Math.hypot(v.x, v.z) || 1,
-      k = Math.min(radius - 5, (d / 1400) * radius);
-    c.fillStyle = e.colour;
-    c.fillRect(rx + (v.x / d) * k - 1.5, ry - (v.z / d) * k - 1.5, 3, 3);
+  c.fill();
+  for (const ring of [0.33, 0.66, 1]) {
+    c.strokeStyle = ring === 1 ? soft : dim;
+    c.beginPath();
+    c.arc(rx, ry, radius * ring, 0, TAU);
+    c.stroke();
+  }
+  path(
+    c,
+    [
+      [rx - radius, ry],
+      [rx + radius, ry],
+    ],
+    dim
+  );
+  path(
+    c,
+    [
+      [rx, ry - radius],
+      [rx, ry + radius],
+    ],
+    dim
+  );
+  c.setLineDash([2, 5]);
+  path(
+    c,
+    [
+      [rx - radius * 0.65, ry - radius * 0.75],
+      [rx, ry],
+      [rx + radius * 0.65, ry - radius * 0.75],
+    ],
+    soft
+  );
+  c.setLineDash([]);
+  const contacts = radarContacts(b, p, radarRange);
+  for (const contact of contacts) {
+    const x = rx + contact.x * radius,
+      y = ry + contact.y * radius;
+    const tip = clamp(
+      y - contact.altitude * radius,
+      ry - radius + 5,
+      ry + radius - 5
+    );
+    const colour =
+      contact.kind === "wingmate"
+        ? contact.colour
+        : contact.locked
+        ? "#fff1aa"
+        : "#ff906b";
+    if (Math.abs(tip - y) > 2) {
+      path(
+        c,
+        [
+          [x, y],
+          [x, tip],
+        ],
+        colour
+      );
+      path(
+        c,
+        [
+          [x - 2, y],
+          [x + 2, y],
+        ],
+        colour
+      );
+    }
+    if (contact.kind === "wingmate") {
+      path(
+        c,
+        [
+          [x, tip - 4],
+          [x + 4, tip],
+          [x, tip + 4],
+          [x - 4, tip],
+          [x, tip - 4],
+        ],
+        colour,
+        1.4
+      );
+    } else {
+      const side = contact.behind ? 1 : -1;
+      path(
+        c,
+        [
+          [x - 3, tip - side * 2],
+          [x, tip + side * 4],
+          [x + 3, tip - side * 2],
+          [x - 3, tip - side * 2],
+        ],
+        colour,
+        1.2
+      );
+    }
+    if (contact.locked) {
+      c.strokeStyle = "#fff1aa";
+      c.strokeRect(x - 7, tip - 7, 14, 14);
+    }
+    if (contact.outside)
+      path(
+        c,
+        [
+          [x - 2, tip + 6],
+          [x + 2, tip + 6],
+        ],
+        colour
+      );
   }
   path(
     c,
@@ -570,8 +691,24 @@ function cockpit(c, b, p, cam, w, h, time, reduced) {
       [rx, ry - 4],
       [rx + 3, ry + 4],
     ],
-    cyan
+    cyan,
+    1.5
   );
+  label(
+    c,
+    `FWD · ${radarRange < 1000 ? `${radarRange}m` : `${radarRange / 1000}km`}`,
+    rx,
+    ry - radius - 5,
+    soft,
+    8,
+    "center"
+  );
+  label(c, "AFT", rx, ry + radius - 8, soft, 8, "center");
+  if (w > 700) {
+    label(c, "▲ HOSTILE", rx + radius + 14, ry - 14, "#ff906b", 8);
+    label(c, "◇ WING", rx + radius + 14, ry, "#69eaff", 8);
+    label(c, "STEM: ALT", rx + radius + 14, ry + 14, soft, 8);
+  }
   label(c, "SHIELD", 25, h - 56, soft, 9);
   bar(c, 25, h - 45, p.shield, cyan, Math.min(130, w * 0.2));
   label(c, "HULL", 25, h - 25, soft, 9);
@@ -635,6 +772,7 @@ export function renderVector(
     reduced = false,
     glow = true,
     elapsed = 0,
+    radarRange = 1600,
   } = {}
 ) {
   const p = view || b.players[0],
@@ -777,7 +915,10 @@ export function renderVector(
   )) {
     const velocity = { x: e.vx, y: e.vy, z: e.vz };
     const pos = add(e, mul(velocity, elapsed));
-    const yaw = e.type === "ark" ? clock * 0.045 : Math.atan2(-e.vx, -e.vz);
+    const yaw =
+      e.type === "ark"
+        ? clock * 0.045
+        : e.flightYaw ?? Math.atan2(-e.vx, -e.vz);
     if (!reduced) {
       const trail = [...(e.trail || []), pos];
       c.globalAlpha = 0.35;
@@ -838,6 +979,39 @@ export function renderVector(
       glow
     );
   }
+  for (const mate of b.wingmates || []) {
+    if (!mate.alive) continue;
+    worldMesh(
+      c,
+      MESHES.vela,
+      mate,
+      cam,
+      w,
+      h,
+      mate.colour,
+      1.1,
+      mate.yaw,
+      mate.roll,
+      glow
+    );
+    const point = project(viewPoint(mate, cam), w, h);
+    if (
+      point &&
+      point.x > 25 &&
+      point.x < w - 25 &&
+      point.y > 65 &&
+      point.y < h * 0.76
+    )
+      label(
+        c,
+        `WING ${mate.index + 1} / ${Math.round(length(sub(mate, p)))}m`,
+        point.x,
+        point.y - 22,
+        mate.colour,
+        10,
+        "center"
+      );
+  }
   for (const cell of b.pickups || []) {
     const distance = length(sub(cell, p));
     worldMesh(
@@ -876,6 +1050,9 @@ export function renderVector(
   for (const s of b.shots) {
     const velocity = { x: s.vx, y: s.vy, z: s.vz };
     const age = Math.max(0, clock - (s.born ?? b.time - 1));
+    // Shots move once in their birth tick before the snapshot is published.
+    // Keep that offset even for interpolated frames, so pulses launch at the
+    // barrel instead of first appearing 150m away as tiny foreshortened dashes.
     const head = add(s, mul(velocity, elapsed - 0.1));
     const trailTime = Math.min(age, s.missile ? 0.26 : s.enemy ? 0.1 : 0.065);
     const tail = sub(head, mul(velocity, trailTime));
@@ -1086,7 +1263,7 @@ export function renderVector(
       label(c, "CONTACT", x, y + 20, e.colour, 9, "center");
     }
   }
-  cockpit(c, b, p, cam, w, h, time, reduced);
+  cockpit(c, b, p, cam, w, h, time, reduced, radarRange);
   cannons(c, b, w, h, clock, glow, reduced);
   if (!preview) {
     const threat = b.shots.find((s) => {
@@ -1159,5 +1336,5 @@ export function renderVector(
   if (b.overheated)
     label(c, "CANNONS COOLING", w / 2, h * 0.64, "#ffb84a", 12, "center");
   if (!preview && b.time < b.noticeUntil)
-    label(c, b.notice, w / 2, h * 0.73, "#b9e8da", w < 700 ? 10 : 12, "center");
+    label(c, b.notice, w / 2, h * 0.16, "#b9e8da", w < 700 ? 10 : 12, "center");
 }

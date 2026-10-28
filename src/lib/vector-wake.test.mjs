@@ -31,7 +31,7 @@ test("flight moves in three dimensions, sanitises inputs and spends/recharges bo
   assert.ok(Number.isFinite(b.players[0].yaw));
   assert.ok(b.players[0].energy > 97);
   for (let i = 0; i < 100; i++) b = stepVector(b, { 0: { pitch: 1 } });
-  assert.ok(b.players[0].pitch <= 1.4);
+  assert.ok(Number.isFinite(b.players[0].pitch)); // Full rotations wrap smoothly; there is no pitch stop.
 });
 test("continuous cannon fire overheats, and releasing fire cools and unlocks it", () => {
   let b = newVector();

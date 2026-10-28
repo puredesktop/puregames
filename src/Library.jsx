@@ -155,11 +155,13 @@ export function Library({
 }) {
   const vector = room.game === "vector",
     halloween = room.game === "halloween",
-    solo = ["letters", "vector"].includes(room.game),
+    solo = room.game === "letters",
     letters = room.game === "letters",
     tether = room.game === "tether",
     noir = room.game === "noir",
-    coop = ["words", "noir", "tether", "halloween"].includes(room.game),
+    coop = ["vector", "words", "noir", "tether", "halloween"].includes(
+      room.game
+    ),
     orbit = room.game === "orbit",
     shoot = room.game === "shoot",
     words = room.game === "words",
@@ -348,7 +350,7 @@ export function Library({
               </span>
               <span className="mode-agent">
                 <RibbonMark />
-                {halloween
+                {halloween || vector
                   ? "Solo or with friends"
                   : solo
                   ? "Offline ready"
@@ -359,7 +361,11 @@ export function Library({
             </div>
           </div>
           <span className="library-player-count">
-            {halloween ? "1–4 players" : solo ? "1 player" : "2–4 players"}
+            {halloween || vector
+              ? "1–4 players"
+              : solo
+              ? "1 player"
+              : "2–4 players"}
           </span>
         </header>
         <div className="library-content">
@@ -453,16 +459,18 @@ export function Library({
                 ))}
               </div>
             </div>
-            {solo || halloween ? (
+            {solo || halloween || vector ? (
               <div className="letter-solo-note">
                 {halloween
                   ? "Six doors. One way out."
                   : vector
-                  ? "Your cockpit. Your flight."
+                  ? "Your cockpit. Your wing."
                   : "Your own pace. Your own discoveries."}
                 <br />
                 {halloween
                   ? "Explore alone offline, or invite up to three teammates through PureServer. Share the relics. Keep each other in sight."
+                  : vector
+                  ? "Fly solo offline, or invite up to three teammates through PureServer. Separate cockpits. One shared mission."
                   : "No team or connection needed. Play opens immediately."}
               </div>
             ) : (
