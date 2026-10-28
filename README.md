@@ -41,6 +41,7 @@ Native sessions use `collab.remote` through the shell's authenticated main-proce
 - Vector Wake cooperative flight for one to four human pilots using existing PureServer invitations and live sessions.
 - Independent cockpits and controls, visible Vela wingmates, per-pilot equipment, kill credit, shared mission results and recovery beside a surviving teammate.
 - Continuous pitch loops and smooth camera interpolation through angle wrapping.
+- A shared buffered animation timeline for cockpits, enemy ships, wingmates, projectiles, targeting and radar. Uneven multiplayer updates no longer restart movement or snap enemy ships between ticks.
 - Larger tactical radar with selectable range, altitude, forward/aft orientation, friend/foe shapes and locked-target highlighting.
 - Existing solo checkpoints and other games remain supported. No new dependencies or model calls.
 

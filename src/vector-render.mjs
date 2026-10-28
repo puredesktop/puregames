@@ -915,7 +915,10 @@ export function renderVector(
   )) {
     const velocity = { x: e.vx, y: e.vy, z: e.vz };
     const pos = add(e, mul(velocity, elapsed));
-    const yaw = e.type === "ark" ? clock * 0.045 : Math.atan2(-e.vx, -e.vz);
+    const yaw =
+      e.type === "ark"
+        ? clock * 0.045
+        : e.flightYaw ?? Math.atan2(-e.vx, -e.vz);
     if (!reduced) {
       const trail = [...(e.trail || []), pos];
       c.globalAlpha = 0.35;
@@ -1047,7 +1050,7 @@ export function renderVector(
   for (const s of b.shots) {
     const velocity = { x: s.vx, y: s.vy, z: s.vz };
     const age = Math.max(0, clock - (s.born ?? b.time - 1));
-    const head = add(s, mul(velocity, elapsed - 0.1));
+    const head = b.smoothMotion ? s : add(s, mul(velocity, elapsed - 0.1));
     const trailTime = Math.min(age, s.missile ? 0.26 : s.enemy ? 0.1 : 0.065);
     const tail = sub(head, mul(velocity, trailTime));
     worldLine(

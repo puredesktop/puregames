@@ -7,6 +7,7 @@ import {
   PILOT_COLOURS,
 } from "./lib/vector-wake.mjs";
 import { renderVector } from "./vector-render.mjs";
+import { createVectorMotion } from "./lib/vector-motion.mjs";
 import { createFlightAudio } from "./vector-audio.mjs";
 import "./vector.css";
 
@@ -30,9 +31,7 @@ function FlightCanvas({
     let raf,
       disposed = false,
       visible = true,
-      last = board,
-      previous = board.players[0],
-      changed = performance.now(),
+      motion = createVectorMotion(),
       width = 0,
       height = 0;
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -56,40 +55,18 @@ function FlightCanvas({
       if (disposed) return;
       const b = state.current.board;
       if (visible && width > 0) {
-        if (last !== b) {
-          previous = last.players[0];
-          last = b;
-          changed = time;
-        }
-        const p = b.players[0],
-          blend = state.current.paused
-            ? 1
-            : clamp((time - changed) / 100, 0, 1),
-          angle = (a, z) =>
-            a + Math.atan2(Math.sin(z - a), Math.cos(z - a)) * blend;
-        const view = {
-          ...p,
-          x: previous.x + (p.x - previous.x) * blend,
-          y: previous.y + (p.y - previous.y) * blend,
-          z: previous.z + (p.z - previous.z) * blend,
-          yaw: angle(previous.yaw, p.yaw),
-          pitch: angle(previous.pitch, p.pitch),
-          roll: previous.roll + (p.roll - previous.roll) * blend,
-        };
+        const frame = motion.sample(b, time, state.current.paused || preview);
+        const view = { ...frame.players[0] };
         if (preview) {
           view.yaw = Math.sin(reduced ? 0 : time * 0.00012) * 0.14;
           view.pitch = -0.03;
         }
-        renderVector(c, b, width, height, time, {
+        renderVector(c, frame, width, height, time, {
           preview,
           view,
           reduced,
           glow,
           radarRange: state.current.radarRange,
-          elapsed:
-            state.current.paused || preview || b.done
-              ? 0
-              : clamp((time - changed) / 1000, 0, 0.1),
         });
       }
       raf = requestAnimationFrame(draw);
