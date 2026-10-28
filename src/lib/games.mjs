@@ -14,6 +14,7 @@ export const GAMES = {
     ],
   },
   halloween: {
+    retired: true,
     name: "Gourd Street",
     subtitle: "The lights are still on",
     genre: "1–4 players · First person · Atmospheric horror",
