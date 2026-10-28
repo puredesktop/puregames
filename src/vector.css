@@ -250,7 +250,7 @@
 }
 .vector-touch {
   position: absolute;
-  bottom: 80px;
+  bottom: 195px;
   left: 18px;
   right: 18px;
   display: none;
@@ -414,7 +414,7 @@
   }
   .vector-touch {
     display: flex;
-    bottom: 75px;
+    bottom: 145px;
     left: 10px;
     right: 10px;
   }
@@ -447,5 +447,74 @@
   .vector-course {
     top: 42px;
     font-size: 8px;
+  }
+}
+
+.vector-wing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--v-line);
+  background: #04100d;
+  font-size: 10px;
+}
+.vector-wing-roster,
+.vector-wing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.vector-wing-pilot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.vector-wing-pilot strong {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pilot-colour);
+}
+.vector-wing-pilot i {
+  width: 6px;
+  height: 6px;
+  background: var(--pilot-colour);
+  transform: rotate(45deg);
+}
+.vector-wing-pilot span,
+.vector-wing-actions > span {
+  color: #709f90;
+}
+.vector-recovery {
+  position: absolute;
+  top: 28%;
+  left: 10%;
+  right: 10%;
+  padding: 18px;
+  text-align: center;
+  border: 1px solid #297784;
+  background: #031b24e6;
+  color: #9ceaff;
+  font-size: 13px;
+  pointer-events: none;
+}
+@media (max-width: 650px) {
+  .vector-wing {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .vector-wing-roster {
+    gap: 10px;
+  }
+  .vector-wing-pilot {
+    font-size: 9px;
   }
 }

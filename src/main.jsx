@@ -85,7 +85,7 @@ function App() {
     letters = s.game === "letters",
     tether = s.game === "tether",
     noir = s.game === "noir",
-    coop = ["noir", "words", "tether", "halloween"].includes(s.game),
+    coop = ["vector", "noir", "words", "tether", "halloween"].includes(s.game),
     orbit = s.game === "orbit",
     shoot = s.game === "shoot",
     words = s.game === "words",
@@ -318,7 +318,7 @@ function App() {
     setInvite(mode);
   }
   async function playNow() {
-    if (solo && !remote) {
+    if ((solo || vector) && !remote) {
       action({ type: s.phase === "finished" ? "rematch" : "start" });
       focusArena();
     } else if (remote) {
@@ -565,7 +565,21 @@ function App() {
         </div>
       ) : vector ? (
         <VectorArena
-          board={s.board?.kind === "vector" ? s.board : newVector(1, s.arena)}
+          board={
+            s.board?.kind === "vector"
+              ? s.board
+              : newVector(s.seats.length, s.arena)
+          }
+          seat={s.seats.findIndex((p) => p.id === id)}
+          seats={s.seats}
+          peers={peers}
+          remote={Boolean(remote)}
+          code={code}
+          connected={connected}
+          hostControls={hostControls}
+          ready={ready}
+          onInvite={server ? () => showInvite("team") : null}
+          onRemove={(who) => action({ type: "remove", id: who })}
           lobby={s.phase === "lobby"}
           paused={s.paused}
           onSteer={steer}
