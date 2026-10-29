@@ -6,6 +6,7 @@ import {
   targetFor,
   axes,
   sub,
+  dot,
   length,
   clamp,
   segmentDistance,
@@ -32,6 +33,18 @@ test("flight moves in three dimensions, sanitises inputs and spends/recharges bo
   assert.ok(b.players[0].energy > 97);
   for (let i = 0; i < 100; i++) b = stepVector(b, { 0: { pitch: 1 } });
   assert.ok(Number.isFinite(b.players[0].pitch)); // Full rotations wrap smoothly; there is no pitch stop.
+});
+test("right turns the nose to the pilot's right, upright or inverted after a loop", () => {
+  for (const pitch of [0.4, Math.PI - 0.4, -(Math.PI - 0.4)]) {
+    const start = newVector();
+    start.players[0].pitch = pitch;
+    const before = axes(start.players[0]);
+    const after = axes(stepVector(start, { 0: { turn: 1 } }).players[0]);
+    assert.ok(
+      dot(sub(after.f, before.f), before.r) > 0,
+      `pitch ${pitch.toFixed(2)}: the nose went left`
+    );
+  }
 });
 test("continuous cannon fire overheats, and releasing fire cools and unlocks it", () => {
   let b = newVector();

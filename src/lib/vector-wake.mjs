@@ -365,9 +365,12 @@ export function stepVector(state, inputs = {}) {
     }
     const turn = finite(raw.turn),
       pitch = finite(raw.pitch);
+    // Turn toward the pilot's own right: past the top of a loop the ship is inverted, and the same yaw change would
+    // swing the nose to their left.
+    const yawStep = turn * 0.13 * (Math.cos(p.pitch) < 0 ? -1 : 1);
     p.yaw = Math.atan2(
-      Math.sin(p.yaw + turn * 0.13),
-      Math.cos(p.yaw + turn * 0.13)
+      Math.sin(p.yaw + yawStep),
+      Math.cos(p.yaw + yawStep)
     );
     p.pitch = Math.atan2(
       Math.sin(p.pitch + pitch * 0.105),
