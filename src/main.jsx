@@ -37,6 +37,9 @@ import { GAMES, isAvailableGame } from "./lib/games.mjs";
 import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
 import "./letters.css";
+import "./compact-in-room.css";
+import { HeldGames } from "./HeldGames.jsx";
+import { useCopyRole } from "./useCopyRole.js";
 const me = { id: "local", name: "You", bot: false };
 const initial = (requestedGame = "vector") => {
   const game = isAvailableGame(requestedGame) ? requestedGame : "vector";
@@ -52,7 +55,7 @@ const initial = (requestedGame = "vector") => {
 };
 const ROOT = "/Workspace/Games";
 const title = "Team game";
-function App() {
+function App({ copy }) {
   const [screen, setScreen] = useState("library"),
     [local, setLocal] = useState(initial),
     [remote, setRemote] = useState(null),
@@ -132,6 +135,8 @@ function App() {
       requestedResource.current = path;
       setWantedRoom(path);
     };
+    // A second running copy joins no game by being opened on one: a person presses Play in the full app.
+    if (!copy.known || copy.second) return undefined;
     let done = false;
     void bridge.waitForReady().then((meta) => {
       if (!done) receive(meta.viewport?.resource);
@@ -141,7 +146,7 @@ function App() {
       done = true;
       off();
     };
-  }, []);
+  }, [copy.known, copy.second]);
   useEffect(() => {
     if (!server || !wantedRoom) return;
     setWantedRoom("");
@@ -498,6 +503,14 @@ function App() {
             Choose a game
           </button>
         </div>
+      ) : screen === "library" && copy.compact ? (
+        <HeldGames
+          onPick={(game) => {
+            if (!isAvailableGame(game)) return;
+            setLocal(initial(game));
+            setScreen("table");
+          }}
+        />
       ) : screen === "library" ? (
         <Library
           room={s}
@@ -1222,8 +1235,12 @@ function App() {
     </div>
   );
 }
-createRoot(document.getElementById("root")).render(
-  <AppFrame identityAppSlug="games">
-    <App />
-  </AppFrame>
-);
+function Root() {
+  const copy = useCopyRole();
+  return (
+    <AppFrame identityAppSlug="games" {...(copy.compact ? { "data-compact-room": "" } : undefined)}>
+      <App copy={copy} />
+    </AppFrame>
+  );
+}
+createRoot(document.getElementById("root")).render(<Root />);

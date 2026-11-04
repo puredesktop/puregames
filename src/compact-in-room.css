@@ -1,0 +1,105 @@
+/* PureGames held inside a page (useCopyRole): a short list of the games, then the game itself, fit to the frame. The frame
+   carries data-compact-room only then, and every rule here starts from it. The games keep their own look: that is their content. */
+
+[data-compact-room] {
+  background: #ffffff;
+  color: #1b1d21;
+}
+[data-compact-room] > header {
+  display: none !important;
+}
+html[data-held-in-room]:has([data-compact-room]),
+html[data-held-in-room]:has([data-compact-room]) body {
+  background: #ffffff;
+}
+[data-compact-room] .game-viewport {
+  background: #ffffff;
+}
+/* The toolbar is a thin line: back to the games, and the game's name. Full screen and invites are in the full app. */
+[data-compact-room] .game-toolbar {
+  min-height: 0;
+  padding: 4px 12px;
+  border-bottom: 1px solid #dde1e7;
+  background: #ffffff;
+  color: #1b1d21;
+}
+[data-compact-room] .toolbar-actions {
+  display: none;
+}
+[data-compact-room] .game-title {
+  gap: 12px;
+}
+[data-compact-room] .game-title button {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid #cdd1d7;
+  border-radius: 3px;
+  background: #ffffff;
+  color: #1b1d21;
+  font-size: 12px;
+  box-shadow: none;
+}
+[data-compact-room] .game-title strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1b1d21;
+}
+[data-compact-room] .game-title > span {
+  display: none;
+}
+/* On the list there is nothing to go back to. */
+[data-compact-room] .game-viewport:has(.games-held) > .game-toolbar {
+  display: none;
+}
+[data-compact-room] .games-held {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+[data-compact-room] .games-held h2 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #565a62;
+}
+[data-compact-room] .games-held ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid #dde1e7;
+}
+[data-compact-room] .games-held li {
+  border-bottom: 1px solid #dde1e7;
+}
+[data-compact-room] .games-held li button {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+}
+[data-compact-room] .games-held li button:hover {
+  background: #f5f6f8;
+}
+[data-compact-room] .games-held li b {
+  font-weight: 500;
+}
+[data-compact-room] .games-held li span {
+  font-size: 12px;
+  color: #565a62;
+}
+/* The game's status line: the frame is short, and the game says what it needs to. */
+[data-compact-room] .game-statusbar {
+  display: none;
+}
