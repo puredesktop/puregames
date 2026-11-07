@@ -36,6 +36,7 @@ import { newWords } from "./lib/words.mjs";
 import { GAMES, isAvailableGame } from "./lib/games.mjs";
 import { Library, FlightKeys } from "./Library.jsx";
 import "./style.css";
+import "./enterprise-look.css";
 import "./letters.css";
 import "./compact-in-room.css";
 import { HeldGames } from "./HeldGames.jsx";
@@ -391,6 +392,7 @@ function App({ copy }) {
           ? "noir-mode"
           : ""
       } ${fullscreen ? "is-fullscreen" : ""}`}
+      data-screen={screen}
       ref={surface}
     >
       <div className="game-toolbar">
